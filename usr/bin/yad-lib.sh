@@ -524,21 +524,16 @@ END {
   if(Scale[4] > 0 && hp > Scale[4]) { hp = Scale[4] } # min
   if(hp < 0) { hp = 0 } # valid GTK for unconstrained height
   # set popup origin relative to window center
-#DELETEME printf "A xp=%d yp=%d wp=%d hp=%d\n", xp, yp, wp, hp > "/dev/stderr"
   xp -= wp / 2; yp -= hp / 2
-#DELETEME printf "B xp=%d yp=%d wp=%d hp=%d\n", xp, yp, wp, hp > "/dev/stderr"
   # ensure popup origin is inside the screen
   if(xp < 1) { xp = 0 }; if(yp < 1) { yp = 0 }
-#DELETEME printf "C xp=%d yp=%d wp=%d hp=%d\n", xp, yp, wp, hp > "/dev/stderr"
   # set unconstrained width/height popup origin +20+20 relative to the framing
   # window because the actual popup width/height is unknown
   if(wp < 1) { xp = x + 20 }; if(hp < 1) { yp = y + 20 }
-#DELETEME printf "D xp=%d yp=%d wp=%d hp=%d\n", xp, yp, wp, hp > "/dev/stderr"
 
   # seemingly redundant --width and --height added to work around issue
   # github.com/v1cont/yad/issues/#12
   printf "--geometry %dx%d%+d%+d --width=%d --height=%d --geometry %dx%d%+d%+d --width=%d --height=%d", w, h, x, y, w, h, wp, hp, xp, yp, wp, hp
-#DELETEME printf "--geometry %dx%d%+d%+d --width=%d --height=%d --geometry %dx%d%+d%+d --width=%d --height=%d\n", w, h, x, y, w, h, wp, hp, xp, yp, wp, hp  > "/dev/stderr"
 } ')
   [ $# = 0 ] && return 1
   YAD_GEOMETRY="$1 $2 $3 $4" YAD_GEOMETRY_POPUP="$5 $6 $7 $8"
@@ -789,12 +784,3 @@ yad_lib_doc() # $1-fullpath-of-yad-lib-file {{{1
   awk '/[M]ARKDOWNDOC/ {f=index($0, "<<"); next} f {print; next}' "$this"
 }
 
-# {{{1}}}
-: << DELETEME
-scripts-to-go/yad-lib/usr/bin/yad-lib.sh
-scripts-to-go/dndmate/usr/bin/dndmate
-scripts-to-go/fatdog-wireless-antenna/usr/sbin/fatdog-wireless-antenna.sh
-see what else can be added from yad <TAB> <TAB>
-
-$SHOM/../usr/share/Network/... (sbm mounter)
-DELETEME
