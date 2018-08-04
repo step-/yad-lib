@@ -296,7 +296,6 @@ yad_lib_dispatch() # $@-script-arguments {{{1
 yad_lib_at_restart_app() # [options] [$@-args] {{{1
 # Invoke as: [ sh -c "$0 ] at_restart_app ... ["]
 {
-  echo >&2 YAD_LIB_AT_RESTART_APP "$@"
   local opt_exit opt_get_cmdline opt_no_capture opt_signal opt_yad_pid
   while [ $# -gt 0 ]; do
     case $1 in
@@ -497,7 +496,6 @@ yad_lib_set_YAD_GEOMETRY() # $1-window-xid $2-window-title $3-popup-scaling {{{1
   else
     return 123
   fi
-echo >&2 "yad_lib_set_YAD_GEOMETRY xid=(${1:-$YAD_XID}) title=("${2:-$YAD_TITLE}") scale=("${3:-90:50:-1:-1:-1:-1}")"
   set -- $(xwininfo $t "$a" | awk -F: -v P="$scale" '
 /Absolute upper-left X/ {x  = $2; next}
 /Absolute upper-left Y/ {y  = $2; next}
