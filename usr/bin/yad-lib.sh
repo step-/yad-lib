@@ -379,13 +379,13 @@ dialog size and window position when a yad dialog restarts itself or starts a
 yad popup sub-dialog.
 
 Note: The functions presented in section _Dispatching yad_ use
-yad_lib_set_YAD_GEOMETRY directly. So if your script just calls the dispatching
-functions --as it should do in most cases-- you can skip the next few
-paragraphs, and try the example script at the end of this section. Come back
-here for a second reading when you can.
+`yad_lib_set_YAD_GEOMETRY` directly. So if your script just calls the
+dispatching functions --as it should do in most cases-- you can skip the next
+few paragraphs, and try the example script at the end of this section. Come
+back here for a second reading when you can.
 
 ```sh
-    yad_lib_set_YAD_GEOMETRY() $1-window-xid $2-window-title $3-popup-scaling
+    yad_lib_set_YAD_GEOMETRY $1-window-xid $2-window-title $3-popup-scaling
 ```
 
 Function `yad_lib_set_YAD_GEOMETRY` computes the geometry of the parent yad
