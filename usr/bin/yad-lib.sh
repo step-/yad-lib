@@ -7,7 +7,7 @@
 # License: GNU GPL Version 2
 # Homepage=https://github.com/step-/yad-lib
 # Requirements: see section _Compatibility and Requirements_
-# Version=1.0.0
+# Version=1.1.0
 # META-end
 
 : << 'MARKDOWNDOC' # {{{1 Title; Do You Need This Library?
@@ -86,6 +86,46 @@ This library requires `xwininfo`, `awk`, the proc file system.
 
 ## Functions
 MARKDOWNDOC
+
+: << 'MARKDOWNDOC' # {{{1 Dispatching yad
+
+### Initialing the Library
+
+By default library initialization occurs automatically upon sourcing its file but can be disabled and/or repeated. Use
+
+```sh
+    YAD_LIB_INIT="-1" . yad-lib.sh
+```
+
+to disable the initialization. Use
+
+```sh
+    yad_lib_init
+```
+
+to repeat the initialization. After the initialization, the following global
+variables are set and exported (if marked [e]):
+
+```sh
+    Variable Name           Used By
+
+    YAD_LIB_SCREEN_HEIGTH   yad_lib_set_YAD_GEOMETRY [e]
+    YAD_LIB_SCREEN_WIDTH    yad_lib_set_YAD_GEOMETRY [e]
+```
+MARKDOWNDOC
+
+yad_lib_init() # {{{1
+{
+  set -- $(xwininfo -root | awk -F: '
+/Width/  {w = $2; next}
+/Height/ {h = $2; exit}
+END {
+  printf "%d %d", w, h
+} ')
+  [ $# = 0 ] && return 1
+  export YAD_LIB_SCREEN_WIDTH=$1 YAD_LIB_SCREEN_HEIGHT=$2
+  return 0
+}
 
 : << 'MARKDOWNDOC' # {{{1 Dispatching yad
 
@@ -391,7 +431,8 @@ back here for a second reading when you can.
 Function `yad_lib_set_YAD_GEOMETRY` computes the geometry of the parent yad
 window, or of a yad window specified by the positional parameters, and sets
 environment variables that can be used to easily start another yad window
-having the same geometry.
+having the same geometry, with some caveats discussed further down in this
+section:
 
 **Positional Parameters**
 
@@ -434,6 +475,20 @@ quickly dismissed.
 
 Zero on success otherwise `123` silently for invalid positional parameters,
 other non-zero for other errors.
+
+**Caveats**
+
+Since yad does not allow sizing a window smaller than its unpadded contents,
+the size that `yad_lib_set_YAD_GEOMETRY` computes for the new main and popup
+dialogs can be considered a _hint_ rather than a constraint for yad, which
+will honor the requested size if all unpadded contents can fit inside the window
+otherwise the window will be larger. In practice, for the main dialog this is
+seldom a problem, provided that the new dialog contains the same widgets of the
+old one. For the popup window, where widgets and text contents can vary a lot,
+if you want for the window to always display wholly inside the screen, you
+will need to accurately estimate `$3-popup-scaling` factors otherwise the popup
+may display partially off-screen when the dialog is positioned near the edges
+of the screen.
 
 **Example**
 
@@ -479,7 +534,8 @@ yad_lib_set_YAD_GEOMETRY() # $1-window-xid $2-window-title $3-popup-scaling {{{1
 # window.  If neither one exists, compute for window title $2, if any,
 # otherwise of window title YAD_TITLE. Assign global YAD_GEOMETRY to the
 # computed geometry formatted as a long-format option.  Assign
-# YAD_GEOMETRY_POPUP to a scaled geometry centered in YAD_GEOMETRY.
+# YAD_GEOMETRY_POPUP to a scaled geometry centered in YAD_GEOMETRY and
+# corrected to fit the whole popup window inside the screen (with caveats).
 # Popup-scaling $3 is a string of colon-separated numbers
 # "ScaleWidth:ScaleHeight:MaxWidth:MaxHeight:MinWidth:MinHeight" where
 # ScaleWidth/Height are expressed in percentage of the framing dialog width and
@@ -489,6 +545,7 @@ yad_lib_set_YAD_GEOMETRY() # $1-window-xid $2-window-title $3-popup-scaling {{{1
 # Return 0 on successful assignments, 123 on bad arguments, 1 otherwise.
 {
   local xid=${1:-$YAD_XID} title="${2:-$YAD_TITLE}" scale="${3:-90:50:-1:-1:-1:-1}" t a w h x y
+  local title_bar_height=20
   if [ "$xid" ]; then
     t=-id a=$xid
   elif [ "$title" ]; then
@@ -496,7 +553,9 @@ yad_lib_set_YAD_GEOMETRY() # $1-window-xid $2-window-title $3-popup-scaling {{{1
   else
     return 123
   fi
-  set -- $(xwininfo $t "$a" | awk -F: -v P="$scale" '
+  set -- $(xwininfo $t "$a" | awk -F: -v P="$scale" \
+    -v WS=${YAD_LIB_SCREEN_WIDTH:-0} \
+    -v HS=${YAD_LIB_SCREEN_HEIGHT:-0} '
 /Absolute upper-left X/ {x  = $2; next}
 /Absolute upper-left Y/ {y  = $2; next}
 /Relative upper-left X/ {x -= $2; next}
@@ -523,8 +582,12 @@ END {
   if(hp < 0) { hp = 0 } # valid GTK for unconstrained height
   # set popup origin relative to window center
   xp -= wp / 2; yp -= hp / 2
-  # ensure popup origin is inside the screen
+  # move popup origin inside the screen
   if(xp < 1) { xp = 0 }; if(yp < 1) { yp = 0 }
+  if(WS && HS) { # fit whole popup inside the screen
+    if(wp < WS && xp + wp > WS) { xp = WS - wp - 1 }
+    if(hp < HS && yp + hp > HS) { yp = HS - hp - 1 - '$title_bar_height' }
+  }
   # set unconstrained width/height popup origin +20+20 relative to the framing
   # window because the actual popup width/height is unknown
   if(wp < 1) { xp = x + 20 }; if(hp < 1) { yp = y + 20 }
@@ -781,4 +844,9 @@ yad_lib_doc() # $1-fullpath-of-yad-lib-file {{{1
   fi
   awk '/[M]ARKDOWNDOC/ {f=index($0, "<<"); next} f {print; next}' "$this"
 }
+
+# Initialize the library {{{1
+if [ -1 != "$YAD_LIB_INIT" ]; then
+  yad_lib_init
+fi
 
