@@ -78,44 +78,55 @@ viewer, which is pre-installed in
 ## Compatibility and Requirements
 
 This library is compatible with `sh`, `bash`, `dash`, and `ash` (busybox). It
-is intented for and tested with GTK2. It should work with versions of yad as
-early as 0.36.3. However, you are encouraged to updated yad to the latest
-version.
+is intented for and tested with GTK2. It should work with yad versions as
+early as 0.36.3. However, you are encouraged to updated yad to version 0.42.
 
 This library requires `xwininfo`, `awk`, the proc file system.
 
 ## Functions
 MARKDOWNDOC
 
-: << 'MARKDOWNDOC' # {{{1 Dispatching yad
+: << 'MARKDOWNDOC' # {{{1 Initializing the Library
 
 ### Initialing the Library
 
-By default library initialization occurs automatically upon sourcing its file but can be disabled and/or repeated. Use
+By default library initialization occurs automatically upon sourcing the
+library file.  Initialization benefits some but not all library functions.
+If your application does not call those functions it can disable automatic
+initialization for a faster start.  Use:
 
 ```sh
-    YAD_LIB_INIT="-1" . yad-lib.sh
+YAD_LIB_INIT="-1" . yad-lib.sh
 ```
 
-to disable the initialization. Use
+to source the library without automatic initialization. Use:
 
 ```sh
-    yad_lib_init
+. yad-lib.sh
+yad_lib_init [yad-version]
 ```
 
-to repeat the initialization. After the initialization, the following global
-variables are set and exported (if marked [e]):
+to source the library then perform manual initialization. If `yad-version` is
+empty, `yad_lib_init` will fill it in by running `yad --version` and taking the
+first output word.  `yad_lib_init` sets the following global variables:
 
-```sh
-    Variable Name           Used By
-
-    YAD_LIB_SCREEN_HEIGTH   yad_lib_set_YAD_GEOMETRY [e]
-    YAD_LIB_SCREEN_WIDTH    yad_lib_set_YAD_GEOMETRY [e]
 ```
+Name                     Flags    Benefits
+
+YAD_LIB_SCREEN_HEIGTH    e        yad_lib_set_YAD_GEOMETRY
+YAD_LIB_SCREEN_WIDTH     e        yad_lib_set_YAD_GEOMETRY
+```
+
+e = export
+
 MARKDOWNDOC
 
-yad_lib_init() # {{{1
+yad_lib_init() # [$1-yad-version] {{{1
 {
+  if ! [ "$1" ]; then
+    set -- $(yad --version)
+  fi
+  export YAD_LIB_YAD_VERSION="$1"
   set -- $(xwininfo -root | awk -F: '
 /Width/  {w = $2; next}
 /Height/ {h = $2; exit}
