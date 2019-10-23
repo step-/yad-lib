@@ -115,6 +115,7 @@ Name                     Flags    Benefits
 
 YAD_LIB_SCREEN_HEIGTH    e        yad_lib_set_YAD_GEOMETRY
 YAD_LIB_SCREEN_WIDTH     e        yad_lib_set_YAD_GEOMETRY
+YAD_LIB_YAD_VERSION      e        yad_lib_set_YAD_GEOMETRY
 ```
 
 e = export
@@ -482,6 +483,18 @@ in a `yad` command-line that starts a yad popup sub-dialog, that is, a yad
 window that is intended to show over the main yad dialog window, and be
 quickly dismissed.
 
+The format of `YAD_GEOMETRY`(`_POPUP`) varies by yad version as follows:
+
+> For `YAD_LIB_YAD_VERSION` < 0.40
+```
+--geometry <width>x<height>+<posx>+<posy> --width=<width>  --height=<height>
+```
+
+> For `YAD_LIB_YAD_VERSION` >= 0.40
+```
+--posx=<posx> --posy=<posy> --width=<width>  --height=<height>
+```
+
 **Return value**
 
 Zero on success otherwise `123` silently for invalid positional parameters,
@@ -543,7 +556,7 @@ MARKDOWNDOC
 yad_lib_set_YAD_GEOMETRY() # $1-window-xid $2-window-title $3-popup-scaling {{{1
 # Compute the geometry of window $1, if any, otherwise of the parent yad
 # window.  If neither one exists, compute for window title $2, if any,
-# otherwise of window title YAD_TITLE. Assign global YAD_GEOMETRY to the
+# otherwise for window title YAD_TITLE. Assign global YAD_GEOMETRY to the
 # computed geometry formatted as a long-format option.  Assign
 # YAD_GEOMETRY_POPUP to a scaled geometry centered in YAD_GEOMETRY and
 # corrected to fit the whole popup window inside the screen (with caveats).
@@ -566,7 +579,9 @@ yad_lib_set_YAD_GEOMETRY() # $1-window-xid $2-window-title $3-popup-scaling {{{1
   fi
   set -- $(xwininfo $t "$a" | awk -F: -v P="$scale" \
     -v WS=${YAD_LIB_SCREEN_WIDTH:-0} \
-    -v HS=${YAD_LIB_SCREEN_HEIGHT:-0} '
+    -v HS=${YAD_LIB_SCREEN_HEIGHT:-0} \
+    -v VERSION="${YAD_LIB_YAD_VERSION:-0}" \
+'#{{{awk
 /Absolute upper-left X/ {x  = $2; next}
 /Absolute upper-left Y/ {y  = $2; next}
 /Relative upper-left X/ {x -= $2; next}
@@ -603,10 +618,17 @@ END {
   # window because the actual popup width/height is unknown
   if(wp < 1) { xp = x + 20 }; if(hp < 1) { yp = y + 20 }
 
+  split(VERSION, Version, ".")
+  if ((0+Version[1]) > 0 || (0+Version[1]) == 0 && (0+Version[2]) >= 40) {
+    printf "--posx=%d --posy=%d --width=%d --height=%d --posx=%d --posy=%d --width=%d --height=%d", x, y, w, h, xp, yp, wp, hp
+  } else {
+
+
   # seemingly redundant --width and --height added to work around issue
   # github.com/v1cont/yad/issues/#12
   printf "--geometry %dx%d%+d%+d --width=%d --height=%d --geometry %dx%d%+d%+d --width=%d --height=%d", w, h, x, y, w, h, wp, hp, xp, yp, wp, hp
-} ')
+}
+} #awk}}}')
   [ $# = 0 ] && return 1
   YAD_GEOMETRY="$1 $2 $3 $4" YAD_GEOMETRY_POPUP="$5 $6 $7 $8"
   return 0
