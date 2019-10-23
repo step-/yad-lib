@@ -574,12 +574,12 @@ END {
   wp = w * Scale[1] / 100
   if(Scale[5] > 0 && wp < Scale[5]) { wp = Scale[5] } # max
   if(Scale[3] > 0 && wp > Scale[3]) { wp = Scale[3] } # min
-  if(wp < 0) { wp = 0 } # valid GTK for unconstrained width
+  if(wp <= 0) { wp = 1 }
   # scale popup height
   hp = h * Scale[2] / 100
   if(Scale[6] > 0 && hp < Scale[6]) { hp = Scale[6] } # max
   if(Scale[4] > 0 && hp > Scale[4]) { hp = Scale[4] } # min
-  if(hp < 0) { hp = 0 } # valid GTK for unconstrained height
+  if(hp <= 0) { hp = 1 }
   # set popup origin relative to window center
   xp -= wp / 2; yp -= hp / 2
   # move popup origin inside the screen
