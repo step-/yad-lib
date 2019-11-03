@@ -3,15 +3,17 @@
 
 # META-begin
 # yad-lib.sh - utilities for yad.
-# Copyright (C) step, 2018
-# License: GNU GPL Version 2
+# Copyright (C) step, 2018-2019
+# Dual license: GNU GPL Version 3 or MIT
 # Homepage=https://github.com/step-/yad-lib
 # Requirements: see section _Compatibility and Requirements_
-# Version=1.1.0
+# Version=1.2.0
 # META-end
 
 : << 'MARKDOWNDOC' # {{{1 Title; Do You Need This Library?
-_document revision: 1.0.0_
+title: YAD-LIB  
+date: @VERSION@  
+homepage: <https://github.com/step-/yad-lib>  
 
 # yad-lib.sh - A Shell Library for yad
 
@@ -64,15 +66,21 @@ To use the library source its file from your shell script.
 assuming that the file is installed in one of the standard locations in your
 `PATH`, otherwise specify the full installation path.
 
-The library source file embeds its own English documentation formatted as a
-markdown document. The following command sequence displays the full
-documentation using the
+The library source file embeds its own documentation formatted as a
+markdown document. The following command sequence extracts the markdown text
+and displays it with the
 [mdview](http://chiselapp.com/user/jamesbond/repository/mdview3/timeline)
-viewer, which is pre-installed in
+viewer, which comes pre-installed in
 [Fatdog64 Linux](http://distro.ibiblio.org/fatdog/web/):
 
 ```sh
-    ( . yad-lib.sh && yad_lib_doc > /tmp/yad-lib.md && mdview /tmp/yad-lib.md ) &
+( . yad-lib.sh && yad_lib_doc [> /tmp/yad-lib.md && mdview /tmp/yad-lib.md ) &
+```
+
+Conversely, to strip off markdown text and produce a smaller library file:
+
+```sh
+( . yad-lib.sh && yad_lib_doc > /tmp/yad-lib.md && mdview /tmp/yad-lib.md ) &
 ```
 
 ## Compatibility and Requirements
@@ -99,16 +107,15 @@ initialization for a faster start.  Use:
 YAD_LIB_INIT="-1" . yad-lib.sh
 ```
 
-to source the library without automatic initialization. Use:
+to source the library without automatic initialization. Then use:
 
 ```sh
-. yad-lib.sh
 yad_lib_init [yad-version]
 ```
 
-to source the library then perform manual initialization. If `yad-version` is
-empty, `yad_lib_init` will fill it in by running `yad --version` and taking the
-first output word.  `yad_lib_init` sets the following global variables:
+to explicitly perform initialization. If `yad-version` is empty, `yad_lib_init`
+will fill it by running `yad --version` and taking the first output word.
+`yad_lib_init` sets the following global variables:
 
 ```
 Name                     Flags    Benefits
@@ -119,6 +126,32 @@ YAD_LIB_YAD_VERSION      e        yad_lib_set_YAD_GEOMETRY
 ```
 
 e = export
+
+MARKDOWNDOC
+
+: << 'MARKDOWNDOC' # {{{1 Debugging
+
+### Debugging
+
+You can enable library debugging tools.  Set environment variable
+`YAD_LIB_DEBUG` and run your application.  `YAD_LIB_DEBUG` is a colon-separated
+list of keywords. Each keyword enables a specific debugging tool. Option
+values, if required, can be specified after the option keyword separate by an
+equal sign `=`.
+
+The following keywords are supported:
+
+> `geometry_popup`
+[yad\_lib\_set\_YAD\_GEOMETRY](#yad_lib_set_YAD_GEOMETRY_debug).
+
+> `geometry_popup_caller`
+[yad\_lib\_set\_YAD\_GEOMETRY](#yad_lib_set_YAD_GEOMETRY_debug).
+
+> `geometry_popup_fontsize`
+[yad\_lib\_set\_YAD\_GEOMETRY](#yad_lib_set_YAD_GEOMETRY_debug).
+
+> `geometry_popup_icon`
+[yad\_lib\_set\_YAD\_GEOMETRY](#yad_lib_set_YAD_GEOMETRY_debug).
 
 MARKDOWNDOC
 
@@ -303,7 +336,7 @@ you should pass the value of `$$` as the process id. Typical usage:
 
 **Return value**
 
-`123` silently for an invalid option otherwise this function doesn't return if
+Silently `123` for an invalid option otherwise this function doesn't return if
 option `--exit` is given. Without `--exit` the return value is zero for success
 or a non-zero internal code for errors.
 
@@ -402,6 +435,8 @@ yad_lib_at_exec_popup_yad() # [$@-args] {{{1
 
 : << 'MARKDOWNDOC' # {{{1 yad_lib_set_YAD_GEOMETRY
 
+<a name="yad_lib_set_YAD_GEOMETRY"></a>
+
 ### Keeping yad Window Position and Size
 
 Unlike `gtkdialog`, `yad` has no notion of its window position; it relies
@@ -437,35 +472,62 @@ few paragraphs, and try the example script at the end of this section. Come
 back here for a second reading when you can.
 
 ```sh
-    yad_lib_set_YAD_GEOMETRY $1-window-xid $2-window-title $3-popup-scaling
+yad_lib_set_YAD_GEOMETRY $1-window-xid $2-window-title $3-popup-scale $4-popup-position $5-popup-message
 ```
 
 Function `yad_lib_set_YAD_GEOMETRY` computes the geometry of the parent yad
-window, or of a yad window specified by the positional parameters, and sets
+window or a yad window specified by the positional parameters, and sets
 environment variables that can be used to easily start another yad window
-having the same geometry, with some caveats discussed further down in this
-section:
+with the same geometry:
 
 **Positional Parameters**
 
-`$1-window-xid` - Select the target yad window by its hexadecimal id. If null,
-it is replaced by the value of `$YAD_XID`, which yad automatically sets for
-_children_ dialog windows. If still null, `yad_lib_set_YAD_GEOMETRY` selects
-the target window with `$2`.  Default value: null string.
+`$1-window-xid` - Select the target yad window by its hexadecimal id. If empty,
+it is replaced by the value of `$YAD_XID`, which yad automatically exports to
+_children_ dialog windows. If also empty, `yad_lib_set_YAD_GEOMETRY` selects
+the target window by title `$2`.  Default value: empty string.
 
-`$2-window-title` - Select the target yad window by its title. If null, it is
+`$2-window-title` - Select the target yad window by its title. If empty, it is
 replaced by the value of `$YAD_TITLE`, which is a user-defined
-variable, if any. Ignored if either `$1` or `$YAD_XID` is non-null.  Default
-value: null string.
+variable, if set. Ignored if either `$1` or `$YAD_XID` is non-empty.  Default
+value: empty string.
 
-`$3-popup-scaling` - A string of colon-separated numbers
-"ScaleWidth:ScaleHeight:MaxWidth:MaxHeight:MinWidth:MinHeight" used to
+`$3-popup-scale` - A string of colon- or slash- or comma-separated numbers
+`ScaleWidth:ScaleHeight:MaxWidth:MaxHeight:MinWidth:MinHeight` used to
 calculate size and position of a popup dialog. See section _Calling
 discipline_.  ScaleWidth/Height are expressed in percentage of the framing
-dialog width and height, and Max/Min Width/Height are expressed in px.  `"-1"`
-and omitted values mean unconstrained Scale/Min/Max Width/Height.  Default
-string `"90:50:-1:-1:-1:-1"`, which positions a 90% by 50% scaled popup in the
-center of the main dialog window.
+dialog width and height, and Max/Min Width/Height are expressed in px.  `-1`
+and an empty value mean unconstrained Scale/Min/Max Width/Height.
+Min and Max values make sense only in the context of Scale, therefore they
+are ignored if the Scale is specified unconstrained.
+If both Min and Max are given Min prevails.
+Since yad-lib version 1.2 the separator can be slash or comma in lieu of colon.
+Default string `90:50:-1:-1:-1:-1`, which centers a 90% by 50% scaled popup
+over the main dialog window.
+
+`$4-popup-position` - One of `top`, `right`, `bottom`, `left` (also
+abbreviated) to snap the popup to the respective main window side, or empty
+(default) to center the popup over the main window.
+
+`$5-popup-message` - Debug message -
+ignored if [popup debugging](#yad_lib_set_YAD_GEOMETRY_debug) is disabled.
+
+**Limitations**
+
+The library tries its best to fit the coming popup inside the screen. To this
+end it can nudge the popup away from the center of the main window, and, in
+extreme cases, reduce the popup size. However, there is no guarantee that the
+popup will actually fit inside the screen. In particular, do realize that this
+function can't know or control the actual size of a popup. It only makes
+calculations based on the values specified for Scale, Min and Max.  If Scale is
+specified unconstrained, yad and GTK --not this function-- will determine popup
+size.  GTK is the ultimate ruler because yad options `--width` and `--height`
+_request but do not prescribe_ the size of the window. So, if Scale, Min and
+Max values are too small to fit the content in a way that GTK finds agreable,
+GTK will display a larger window, which could possibly fall outside the screen
+boundaries. Similarly, when yad displays a larger (typically taller) window,
+its relative vertical placement over the main window will be off-centered
+(typically offset towards the bottom half of the main window).
 
 **Calling discipline**
 
@@ -478,7 +540,7 @@ Call `yad_lib_set_YAD_GEOMETRY` to set `YAD_GEOMETRY`, then export it and use
 it in a `yad` command-line that starts or re-starts the main yad dialog.
 
 `yad_lib_set_YAD_GEOMETRY` also sets `YAD_GEOMETRY_POPUP` according to
-`$3-popup-scaling`. You can optionally export `YAD_GEOMETRY_POPUP`, and use it
+`$3-popup-scale`. You can optionally export `YAD_GEOMETRY_POPUP`, and use it
 in a `yad` command-line that starts a yad popup sub-dialog, that is, a yad
 window that is intended to show over the main yad dialog window, and be
 quickly dismissed.
@@ -497,22 +559,33 @@ The format of `YAD_GEOMETRY`(`_POPUP`) varies by yad version as follows:
 
 **Return value**
 
-Zero on success otherwise `123` silently for invalid positional parameters,
-other non-zero for other errors.
+Zero on success otherwise silently `123` for invalid positional parameters,
+and other non-zero for other errors.
 
-**Caveats**
+<a name="yad_lib_set_YAD_GEOMETRY_debug"></a>
 
-Since yad does not allow sizing a window smaller than its unpadded contents,
-the size that `yad_lib_set_YAD_GEOMETRY` computes for the new main and popup
-dialogs can be considered a _hint_ rather than a constraint for yad, which
-will honor the requested size if all unpadded contents can fit inside the window
-otherwise the window will be larger. In practice, for the main dialog this is
-seldom a problem, provided that the new dialog contains the same widgets of the
-old one. For the popup window, where widgets and text contents can vary a lot,
-if you want for the window to always display wholly inside the screen, you
-will need to accurately estimate `$3-popup-scaling` factors otherwise the popup
-may display partially off-screen when the dialog is positioned near the edges
-of the screen.
+**Debugging keywords**
+
+> `geometry_popup`  
+Display an information window sized and positioned according to
+`$YAD_GEOMETRY_POPUP`, although size might be larger if contents do not fit.
+If your application calls `yad_lib_set_gtk2_STYLEFILE` the styles will be
+applied to this window. If `$5-popup-message` is set it will be shown.
+
+> `geometry_popup_caller=<n>`  
+Include <n> levels of bash call-stack frame information (default none).
+Non-negative integer `<n>` is passed to the bash `caller` built-in command.
+
+> `geometry_popup_fontsize=<Pango font size>`  
+Pango font size value (default "x-small"). Make it smaller ("xx-small")
+or larger (see the Pango documentation).
+
+> `geometry_popup_icon=<icon>`  
+Set yad `--window-icon` option (fall back to `YAD_OPTIONS` or yad's icon).
+
+```sh
+YAD_LIB_DEBUG="geometry_popup:geometry_popup_caller=2:geometry_popup_fontsize=xx-small:geometry_popup_icon=gtk-dialog-info" your_app
+```
 
 **Example**
 
@@ -549,27 +622,31 @@ Save and execute the following code as an executable shell script.
 
 **More examples**
 
-[dndmate](https://github.com/step-/scripts-to-go/blob/master/dndmate/usr/bin/dndmate)
-is a complete script that calls `yad_lib_set_YAD_GEOMETRY` directly.
+[dndmate](https://github.com/step-/scripts-to-go/blob/master/README.md#dndmate)
+manages a yad paned dialog and several popup subdialogs with the help of
+`yad_lib_set_YAD_GEOMETRY`.  This is a full -- and complex -- example.
 MARKDOWNDOC
 
-yad_lib_set_YAD_GEOMETRY() # $1-window-xid $2-window-title $3-popup-scaling {{{1
+yad_lib_set_YAD_GEOMETRY() # $1-window-xid $2-window-title $3-popup-scale $4-popup-position $5-popup-message {{{1
 # Compute the geometry of window $1, if any, otherwise of the parent yad
 # window.  If neither one exists, compute for window title $2, if any,
 # otherwise for window title YAD_TITLE. Assign global YAD_GEOMETRY to the
 # computed geometry formatted as a long-format option.  Assign
 # YAD_GEOMETRY_POPUP to a scaled geometry centered in YAD_GEOMETRY and
 # corrected to fit the whole popup window inside the screen (with caveats).
-# Popup-scaling $3 is a string of colon-separated numbers
+# Popup-scale $3 is a string of colon-separated numbers
 # "ScaleWidth:ScaleHeight:MaxWidth:MaxHeight:MinWidth:MinHeight" where
 # ScaleWidth/Height are expressed in percentage of the framing dialog width and
-# height, and Max/Min Width/Height are expressed in px.
-# "-1" and omitted values mean unconstrained Scale/Min/Max Width/Height.
-# Default string "90:50:-1:-1:-1:-1".
+# height, and Max/Min Width/Height are expressed in px. Min wins over Max.
+# -1 and an empty value mean unconstrained Scale/Min/Max Width/Height.
+# Popup-position $4 is one of "top", "right", "bottom", "left" (can abbreviate)
+# to snap to the named main window side, or "" to center over the main window.
+# Popup message $5 is ignored unless YAD_LIB_DEBUG includes "geometry_popup".
 # Return 0 on successful assignments, 123 on bad arguments, 1 otherwise.
 {
-  local xid=${1:-$YAD_XID} title="${2:-$YAD_TITLE}" scale="${3:-90:50:-1:-1:-1:-1}" t a w h x y
-  local title_bar_height=20
+  local xid=${1:-$YAD_XID} title="${2:-$YAD_TITLE}" scale="${3:-90:50:-1:-1:-1:-1}" position="${4:-center}" popup_message="$5" t a w h x y
+  local title_bar_height # auto-detected; set some pixel value to override
+  local geometry_popup geometry_popup_caller geometry_popup_fontsize geometry_popup_icon
   if [ "$xid" ]; then
     t=-id a=$xid
   elif [ "$title" ]; then
@@ -577,58 +654,206 @@ yad_lib_set_YAD_GEOMETRY() # $1-window-xid $2-window-title $3-popup-scaling {{{1
   else
     return 123
   fi
+  case :$YAD_LIB_DEBUG: in *:geometry_popup:* ) # {{{
+    geometry_popup=1
+    case :$YAD_LIB_DEBUG: in *:geometry_popup_caller=* )
+      if [ "$BASH" ]; then
+        local depth="${YAD_LIB_DEBUG#*geometry_popup_caller=}"; depth=${depth%%:*}
+        geometry_popup_caller="$(while caller $i && ((i++ <= $depth)); do :; done)"
+      fi
+    esac
+    case :$YAD_LIB_DEBUG: in *:geometry_popup_fontsize=* )
+      geometry_popup_fontsize=${YAD_LIB_DEBUG#*geometry_popup_fontsize=}
+      geometry_popup_fontsize=${geometry_popup_fontsize%%:*}
+    esac
+    case :$YAD_LIB_DEBUG: in *:geometry_popup_icon=* )
+      geometry_popup_icon=${YAD_LIB_DEBUG#*geometry_popup_icon=}
+      geometry_popup_icon=${geometry_popup_icon%%:*}
+    esac
+  esac
+  #}}}
+
+  # convert scale separators comma and slash to colon
+  local sep=: ; case $scale in */* ) sep=/ ;; *,* ) sep=, ;; esac
+  local IFS=$sep
+  set -- $scale
+  unset IFS
+  scale="$1:$2:$3:$4:$5:$6"
+
   set -- $(xwininfo $t "$a" | awk -F: -v P="$scale" \
+    -v TITLE_BAR_HEIGHT="$title_bar_height" \
     -v WS=${YAD_LIB_SCREEN_WIDTH:-0} \
     -v HS=${YAD_LIB_SCREEN_HEIGHT:-0} \
     -v VERSION="${YAD_LIB_YAD_VERSION:-0}" \
+    -v POSITION="$position" \
+    \
+    -v DEBUG_POPUP="$geometry_popup" \
+    -v DEBUG_POPUP_CALLER="$geometry_popup_caller" \
+    -v DEBUG_POPUP_FONTSIZE="${geometry_popup_fontsize:-x-small}" \
+    -v DEBUG_POPUP_ICON="$geometry_popup_icon" \
+    -v DEBUG_POPUP_MESSAGE="$popup_message" \
+    \
+    -v DEBUG_STYLEFILE="$STYLEFILE" \
+    -v DEBUG_LOGFILE="/dev/stderr" \
 '#{{{awk
-/Absolute upper-left X/ {x  = $2; next}
-/Absolute upper-left Y/ {y  = $2; next}
-/Relative upper-left X/ {x -= $2; next}
-/Relative upper-left Y/ {y -= $2; next}
-/Width/  {w = $2; next}
-/Height/ {h = $2; exit}
+/Absolute upper-left X/ {x  = $2 + 0; next}
+/Absolute upper-left Y/ {y  = $2 + 0; next}
+/Relative upper-left X/ {wt = $2 + 0; next}
+/Relative upper-left Y/ {ht = $2 + 0; next}
+/Width/  {w = $2 + 0; next}
+/Height/ {h = $2 + 0; exit}
+
 END {
   if(!(x y w h)) exit(-1)
+  if ("" != TITLE_BAR_HEIGHT) { ht = TITLE_BAR_HEIGHT + 0 }
+  x -= wt; y -= ht
   if(x < 1) { x = 0 }; if(y < 1) { y = 0 }
   for(i = split(P, Scale); i > 0; i--) {
     Scale[i] = ("" == Scale[i]) ? -1 : (Scale[i] + 0)
   }
-  # get the framing window center to compute popup origin
-  xp = x + w / 2; yp = y + h / 2
+
   # scale popup width
   wp = w * Scale[1] / 100
-  if(Scale[5] > 0 && wp < Scale[5]) { wp = Scale[5] } # max
-  if(Scale[3] > 0 && wp > Scale[3]) { wp = Scale[3] } # min
+  if(Scale[1] > 0) {
+    if(Scale[5] > 0 && wp < Scale[5]) { wp = Scale[5] } # max
+    if(Scale[3] > 0 && wp > Scale[3]) { wp = Scale[3] } # min wins
+  }
   if(wp <= 0) { wp = 1 }
+
   # scale popup height
   hp = h * Scale[2] / 100
-  if(Scale[6] > 0 && hp < Scale[6]) { hp = Scale[6] } # max
-  if(Scale[4] > 0 && hp > Scale[4]) { hp = Scale[4] } # min
+  if(Scale[2] > 0) {
+    if(Scale[6] > 0 && hp < Scale[6]) { hp = Scale[6] } # max
+    if(Scale[4] > 0 && hp > Scale[4]) { hp = Scale[4] } # min wins
+  }
   if(hp <= 0) { hp = 1 }
-  # set popup origin relative to window center
-  xp -= wp / 2; yp -= hp / 2
-  # move popup origin inside the screen
+
+  # set popup origin
+  if(at_top()) {
+    xp = x + w / 2 - wp / 2; yp = y - ht - hp - wt
+  } else if(at_right()) {
+    xp = x + w + 2 * wt; yp = y + h / 2 - hp / 2
+  } else if(at_bottom()) {
+    xp = x + w / 2 - wp / 2; yp = y + ht + h + wt
+  } else if(at_left()) {
+    xp = x - wp - 2 * wt; yp = y + h / 2 - hp / 2
+  } else {
+    # relative to window center
+    xp = x + w / 2 - wp / 2; yp = y + h / 2 - hp / 2;
+    POSITION = "center"
+  }
+
+  # pull popup inside the screen
   if(xp < 1) { xp = 0 }; if(yp < 1) { yp = 0 }
   if(WS && HS) { # fit whole popup inside the screen
-    if(wp < WS && xp + wp > WS) { xp = WS - wp - 1 }
-    if(hp < HS && yp + hp > HS) { yp = HS - hp - 1 - '$title_bar_height' }
+    if(xp + wp > WS) { xp = WS - wp - 2 * wt }
+    if(yp + hp > HS) { yp = HS - hp - 1 - ht }
+    # since yad doesn`t allow negative coordinates, fix origin and clip size
+    if(xp < 0) { wp += xp; xp = 0 }
+    if(yp < 0) { hp += yp; yp = 0 }
   }
-  # set unconstrained width/height popup origin +20+20 relative to the framing
-  # window because the actual popup width/height is unknown
-  if(wp < 1) { xp = x + 20 }; if(hp < 1) { yp = y + 20 }
 
+  # if width/height unconstrained then offset popup origin +ht+ht relative to
+  # the framing window because the actual popup width/height can`t be known
+  if(Scale[1] <= 0) { xp = x + ht }; if(Scale[2] <= 0) { yp = y + ht }
+
+  # output eight words regarless of yad version
   split(VERSION, Version, ".")
-  if ((0+Version[1]) > 0 || (0+Version[1]) == 0 && (0+Version[2]) >= 40) {
-    printf "--posx=%d --posy=%d --width=%d --height=%d --posx=%d --posy=%d --width=%d --height=%d", x, y, w, h, xp, yp, wp, hp
-  } else {
+  if ((0+Version[1]) > 0 || (0+Version[1]) == 0 && (0+Version[2]) >= 40) { # 0.42+
+    printf "%s", result = sprintf("--posx=%d --posy=%d --width=%d --height=%d --posx=%d --posy=%d --width=%d --height=%d", x, y, w, h, xp, yp, wp, hp)
+  } else { # legacy
+    # seemingly redundant --width and --height added to work around issue
+    # github.com/v1cont/yad/issues/#12
+    printf "%s", result = sprintf("--geometry %dx%d%+d%+d --width=%d --height=%d --geometry %dx%d%+d%+d --width=%d --height=%d", w, h, x, y, w, h, wp, hp, xp, yp, wp, hp)
+  }
 
-
-  # seemingly redundant --width and --height added to work around issue
-  # github.com/v1cont/yad/issues/#12
-  printf "--geometry %dx%d%+d%+d --width=%d --height=%d --geometry %dx%d%+d%+d --width=%d --height=%d", w, h, x, y, w, h, wp, hp, xp, yp, wp, hp
+  if(DEBUG_POPUP) { debug_popup(result) }
 }
-} #awk}}}')
+
+function debug_popup(result,   A, argm, args, btn, c, dlg, fld, flds, geo1, geo2, geo3, icoq, icop, klaq, klmq, mou, nbtn, noio, prey, q, eq, eeq, res1, res2, spc, sp0, speq, spa2, styq, text, tl1q, tl2q, yad) { #{{{2
+# in scope: Scale[], x,y,w,h,wt,ht, xp,yp,wp,hp
+
+  # naming convention: names ending with e*q indicate the level of embedded escaped quotes.
+  eeq = esc(eq = esc(q = "\""))
+
+  args = sprintf("%d:%d:%d:%d:%d:%d %s", Scale[1], Scale[2], Scale[3], Scale[4], Scale[5], Scale[6], POSITION)
+  argm = (DEBUG_POPUP_MESSAGE != "" ? ( esc("\\r" DEBUG_POPUP_MESSAGE)) : "")
+  geo3 = sprintf("%dx%d+%d+%d", wp, hp, xp, yp)
+  geo2 = sprintf(" --posx=%d --posy=%d --width=%d --height=%d", xp, yp, wp, hp)
+  geo1 = substr(result, 1, length(result) - length(geo2) - 1)
+  posy = sprintf(" --posy=%d", yp + hp + (at_bottom() ? hp : 0)) # where buttons place dialogs
+  res1 = sprintf("%s=%d %s=%d %s=%d %s=%d", "x",x,"y",y,"w",w,"h",h)
+  res2 = sprintf("%s=%d %s=%d %s=%d %s=%d", "xp",xp,"yp",yp,"wp",wp,"hp",hp)
+
+  btn  = " --button="
+  fld  = " --field="
+  icop = " --window-icon=gtk-paste" # no quotes
+  icoq = DEBUG_POPUP_ICON ? (" --window-icon="q DEBUG_POPUP_ICON q) : ""
+  nbtn = " --no-buttons"
+  flds = 0
+  noio = "exec <&- >/dev/null 2>&1"
+  spc  = " "
+  sp0  = "</span>"
+  speq = "<span size=" (eq DEBUG_POPUP_FONTSIZE eq) ">"
+  styq = DEBUG_STYLEFILE ? (" --gtkrc="q DEBUG_STYLEFILE q) : ""
+  text = " --selectable-labels --text="
+  tl2q = " --title="q "yad-lib debug" q
+  tl1q = " --title="q (DEBUG_POPUP_MESSAGE != "" ? DEBUG_POPUP_MESSAGE : args) q
+
+  srand()
+  prey = nbtn "=" substr(rand() + .1, 3)
+  yad  = "yad --borders=000" # "=000" to exclude non-debug yads
+  klmq = "pkill -f " (q "^" yad prey spc q) # kill mine
+  klaq = "pkill -f " (q "^" yad      spc q) # kill all
+  dlg  = esc(icoq) nbtn
+
+  ### buttons
+
+  # without getcurpos: {{{
+  # mou  = "  --mouse"
+  # A["="] = (q (yad prey (mou esc(tl2q) icop nbtn text (eq DEBUG_POPUP_CALLER eq))) q)
+  # A["#"] = (q (yad prey (mou esc(tl2q) icop nbtn text (eq dlg geo1 "\\r" dlg geo2 eq))) q)
+  # A["i"] = (q (yad prey (mou esc(tl2q) icop nbtn text (eq res1 "\\r" args argm "\\r" res2 eq))) q)
+  # }}}
+
+  # with getcurpos:
+  mou  = esc(" $(set -- $(getcurpos); [ $1 ] && echo --posx=$1 --posy=$(($2 +20)) || echo --mouse)")
+  A["="] = (q "sh -c "esc(q noio " " yad prey (mou esc(tl2q) icop nbtn text (eq DEBUG_POPUP_CALLER eq)) q) q)
+  A["#"] = (q "sh -c "esc(q noio " " yad prey (mou esc(tl2q) icop nbtn text (eq dlg geo1 "\\r" dlg geo2 eq)) q) q)
+  A["i"] = (q "sh -c "esc(q noio " " yad prey (mou esc(tl2q) icop nbtn text (eq res1 "\\r" args argm "\\r" res2 eq)) q) q)
+
+  A["p"] = (q (yad prey dlg geo2 (text (eq esc(speq) geo3 sp0 eq))) q)
+  A["k"] = (q esc(klmq) q)
+  A["z"] = (q esc(klaq) q)
+
+  ### Debug dialog proper
+
+  c = noio ";" yad tl1q icoq nbtn geo2 styq text (q (speq args sp0) q)
+  if(DEBUG_POPUP_CALLER) { # bash only
+  c = c fld (q "_=!!call stack:FBTN" q)       spc A["="]; ++flds
+  }
+  c = c fld (q "_#!!commands:FBTN" q)         spc A["#"]; ++flds
+  c = c fld (q "<b>_i</b>!!summary:FBTN" q)   spc A["i"]; ++flds
+  c = c fld (q "<b>_p</b>!!run popup:FBTN" q) spc A["p"]; ++flds
+  c = c fld (q "_k!!kill mine:FBTN" q)        spc A["k"]; ++flds
+  c = c fld (q "_z!!kill all:FBTN" q)         spc A["z"]; ++flds
+  c = c " --expander --form --columns=" flds
+
+  system(c "&")
+}
+
+function at_top()    { return 1 == index("top", POSITION) }    # {{{2
+function at_right()  { return 1 == index("right", POSITION) }  # {{{2
+function at_bottom() { return 1 == index("bottom", POSITION) } # {{{2
+function at_left()   { return 1 == index("left", POSITION) }   # {{{2
+function esc(s) { #{{{2
+  # https://www.gnu.org/software/gawk/manual/gawk.html#table_002dsub_002dproposed ok {busybox,m,g}awk
+  gsub(/[\\]/, "\\\\", s)
+  gsub(/[$\"]/, "\\\\&", s)
+  return s
+}
+
+#awk}}} {{{2}}} ')
   [ $# = 0 ] && return 1
   YAD_GEOMETRY="$1 $2 $3 $4" YAD_GEOMETRY_POPUP="$5 $6 $7 $8"
   return 0
@@ -728,8 +953,8 @@ button dispatching case.
 
 **More examples**
 
-[fatdog-wireless-antenna](https://github.com/step-/scripts-to-go/blob/master/fatdog-wireless-antenna/usr/sbin/fatdog-wireless-antenna.sh)
-is a complete script that uses polling.
+[fatdog-wireless-antenna](https://github.com/step-/scripts-to-go/blob/master/README.md#fatdog-wireless-antenna)
+manages its window with a polling scheme.
 MARKDOWNDOC
 
 : << 'MARKDOWNDOC' # {{{1 yad_lib_set_gtk2_STYLEFILE
@@ -763,7 +988,7 @@ allows for editing the file outside this library.
 
 **Return Value**
 
-Zero on success otherwise `123` silently for unknown options or other non-zero
+Zero on success otherwise silently `123` for unknown options, and other non-zero
 for other errors.
 
 **Notes**
@@ -851,10 +1076,14 @@ EOSTYLEDEF
 
 ### Sundry
 
-    yad_lib_doc [$1-full-path-of-yad-lib-file]
+    yad_lib_doc [--strip] [$1-full-path-of-yad-lib-file]
 
 Output the embedded markdown documentation. See also section _Usage and
 Documentation_.
+
+**Options**
+
+`--strip` - Output non-documentation lines, that is, just the source code.
 
 **Positional parameters**
 
@@ -867,15 +1096,24 @@ non-standard location not included in your `PATH` variable.
 Zero on success, non-zero on error.
 MARKDOWNDOC
 
-yad_lib_doc() # $1-fullpath-of-yad-lib-file {{{1
+yad_lib_doc() # [--strip] $1-fullpath-of-yad-lib-file {{{1
 {
-  local this=$1
-  ! [ -s "$this" ] && this=$(which yad-lib.sh)
+  local strip this
+  if [ --strip == "$1" ]; then strip=1; shift; fi
+  this=$1
   if ! [ -s "$this" ]; then
-    ls /usr/bin/yad-lib.sh # print generic error message
-    return $?
+    ls "$this" # print generic error message
+    echo "Trying standard path..." >&2
+    this=$(command -v yad-lib.sh | tee /dev/stderr)
   fi
-  awk '/[M]ARKDOWNDOC/ {f=index($0, "<<"); next} f {print; next}' "$this"
+  awk -v STRIP=$strip '#{{{awk
+  BEGIN { STRIP = STRIP + 0 }
+  /^# Version=/ { Version = substr($0, 11) }
+  /[M]ARKDOWNDOC/ { md = index($0, "<<"); next }
+   md  && /@VERSION@/ { gsub(/@VERSION@/, Version) }
+   md  && !STRIP { print; next } # doc
+  !md  &&  STRIP { print; next } # code
+  #awk}}}' "$this"
 }
 
 # Initialize the library {{{1

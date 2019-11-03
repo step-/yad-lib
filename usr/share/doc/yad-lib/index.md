@@ -1,4 +1,6 @@
-_document revision: 1.0.0_
+title: YAD-LIB  
+date: 1.2.0  
+homepage: <https://github.com/step-/yad-lib>  
 
 # yad-lib.sh - A Shell Library for yad
 
@@ -51,27 +53,87 @@ To use the library source its file from your shell script.
 assuming that the file is installed in one of the standard locations in your
 `PATH`, otherwise specify the full installation path.
 
-The library source file embeds its own English documentation formatted as a
-markdown document. The following command sequence displays the full
-documentation using the
+The library source file embeds its own documentation formatted as a
+markdown document. The following command sequence extracts the markdown text
+and displays it with the
 [mdview](http://chiselapp.com/user/jamesbond/repository/mdview3/timeline)
-viewer, which is pre-installed in
+viewer, which comes pre-installed in
 [Fatdog64 Linux](http://distro.ibiblio.org/fatdog/web/):
 
 ```sh
-    ( . yad-lib.sh && yad_lib_doc > /tmp/yad-lib.md && mdview /tmp/yad-lib.md ) &
+( . yad-lib.sh && yad_lib_doc [> /tmp/yad-lib.md && mdview /tmp/yad-lib.md ) &
+```
+
+Conversely, to strip off markdown text and produce a smaller library file:
+
+```sh
+( . yad-lib.sh && yad_lib_doc > /tmp/yad-lib.md && mdview /tmp/yad-lib.md ) &
 ```
 
 ## Compatibility and Requirements
 
 This library is compatible with `sh`, `bash`, `dash`, and `ash` (busybox). It
-is intented for and tested with GTK2. It should work with versions of yad as
-early as 0.36.3. However, you are encouraged to updated yad to the latest
-version.
+is intented for and tested with GTK2. It should work with yad versions as
+early as 0.36.3. However, you are encouraged to updated yad to version 0.42.
 
 This library requires `xwininfo`, `awk`, the proc file system.
 
 ## Functions
+
+### Initialing the Library
+
+By default library initialization occurs automatically upon sourcing the
+library file.  Initialization benefits some but not all library functions.
+If your application does not call those functions it can disable automatic
+initialization for a faster start.  Use:
+
+```sh
+YAD_LIB_INIT="-1" . yad-lib.sh
+```
+
+to source the library without automatic initialization. Then use:
+
+```sh
+yad_lib_init [yad-version]
+```
+
+to explicitly perform initialization. If `yad-version` is empty, `yad_lib_init`
+will fill it by running `yad --version` and taking the first output word.
+`yad_lib_init` sets the following global variables:
+
+```
+Name                     Flags    Benefits
+
+YAD_LIB_SCREEN_HEIGTH    e        yad_lib_set_YAD_GEOMETRY
+YAD_LIB_SCREEN_WIDTH     e        yad_lib_set_YAD_GEOMETRY
+YAD_LIB_YAD_VERSION      e        yad_lib_set_YAD_GEOMETRY
+```
+
+e = export
+
+
+### Debugging
+
+You can enable library debugging tools.  Set environment variable
+`YAD_LIB_DEBUG` and run your application.  `YAD_LIB_DEBUG` is a colon-separated
+list of keywords. Each keyword enables a specific debugging tool. Option
+values, if required, can be specified after the option keyword separate by an
+equal sign `=`.
+
+The following keywords are supported:
+
+> `geometry_popup`
+[yad\_lib\_set\_YAD\_GEOMETRY](#yad_lib_set_YAD_GEOMETRY_debug).
+
+> `geometry_popup_caller`
+[yad\_lib\_set\_YAD\_GEOMETRY](#yad_lib_set_YAD_GEOMETRY_debug).
+
+> `geometry_popup_fontsize`
+[yad\_lib\_set\_YAD\_GEOMETRY](#yad_lib_set_YAD_GEOMETRY_debug).
+
+> `geometry_popup_icon`
+[yad\_lib\_set\_YAD\_GEOMETRY](#yad_lib_set_YAD_GEOMETRY_debug).
+
 
 ### Dispatching yad
 
@@ -235,7 +297,7 @@ you should pass the value of `$$` as the process id. Typical usage:
 
 **Return value**
 
-`123` silently for an invalid option otherwise this function doesn't return if
+Silently `123` for an invalid option otherwise this function doesn't return if
 option `--exit` is given. Without `--exit` the return value is zero for success
 or a non-zero internal code for errors.
 
@@ -268,6 +330,8 @@ many common cases, but you may find that your specific case isn't covered.
 To modify a function do not edit file `yad-lib.sh` directly. Instead copy the
 desired function code to your script file and modify it there. Make sure to
 source `yad-lib.sh` _before_ the redefined function definition.
+
+<a name="yad_lib_set_YAD_GEOMETRY"></a>
 
 ### Keeping yad Window Position and Size
 
@@ -304,34 +368,62 @@ few paragraphs, and try the example script at the end of this section. Come
 back here for a second reading when you can.
 
 ```sh
-    yad_lib_set_YAD_GEOMETRY $1-window-xid $2-window-title $3-popup-scaling
+yad_lib_set_YAD_GEOMETRY $1-window-xid $2-window-title $3-popup-scale $4-popup-position $5-popup-message
 ```
 
 Function `yad_lib_set_YAD_GEOMETRY` computes the geometry of the parent yad
-window, or of a yad window specified by the positional parameters, and sets
+window or a yad window specified by the positional parameters, and sets
 environment variables that can be used to easily start another yad window
-having the same geometry.
+with the same geometry:
 
 **Positional Parameters**
 
-`$1-window-xid` - Select the target yad window by its hexadecimal id. If null,
-it is replaced by the value of `$YAD_XID`, which yad automatically sets for
-_children_ dialog windows. If still null, `yad_lib_set_YAD_GEOMETRY` selects
-the target window with `$2`.  Default value: null string.
+`$1-window-xid` - Select the target yad window by its hexadecimal id. If empty,
+it is replaced by the value of `$YAD_XID`, which yad automatically exports to
+_children_ dialog windows. If also empty, `yad_lib_set_YAD_GEOMETRY` selects
+the target window by title `$2`.  Default value: empty string.
 
-`$2-window-title` - Select the target yad window by its title. If null, it is
+`$2-window-title` - Select the target yad window by its title. If empty, it is
 replaced by the value of `$YAD_TITLE`, which is a user-defined
-variable, if any. Ignored if either `$1` or `$YAD_XID` is non-null.  Default
-value: null string.
+variable, if set. Ignored if either `$1` or `$YAD_XID` is non-empty.  Default
+value: empty string.
 
-`$3-popup-scaling` - A string of colon-separated numbers
-"ScaleWidth:ScaleHeight:MaxWidth:MaxHeight:MinWidth:MinHeight" used to
+`$3-popup-scale` - A string of colon- or slash- or comma-separated numbers
+`ScaleWidth:ScaleHeight:MaxWidth:MaxHeight:MinWidth:MinHeight` used to
 calculate size and position of a popup dialog. See section _Calling
 discipline_.  ScaleWidth/Height are expressed in percentage of the framing
-dialog width and height, and Max/Min Width/Height are expressed in px.  `"-1"`
-and omitted values mean unconstrained Scale/Min/Max Width/Height.  Default
-string `"90:50:-1:-1:-1:-1"`, which positions a 90% by 50% scaled popup in the
-center of the main dialog window.
+dialog width and height, and Max/Min Width/Height are expressed in px.  `-1`
+and an empty value mean unconstrained Scale/Min/Max Width/Height.
+Min and Max values make sense only in the context of Scale, therefore they
+are ignored if the Scale is specified unconstrained.
+If both Min and Max are given Min prevails.
+Since yad-lib version 1.2 the separator can be slash or comma in lieu of colon.
+Default string `90:50:-1:-1:-1:-1`, which centers a 90% by 50% scaled popup
+over the main dialog window.
+
+`$4-popup-position` - One of `top`, `right`, `bottom`, `left` (also
+abbreviated) to snap the popup to the respective main window side, or empty
+(default) to center the popup over the main window.
+
+`$5-popup-message` - Debug message -
+ignored if [popup debugging](#yad_lib_set_YAD_GEOMETRY_debug) is disabled.
+
+**Limitations**
+
+The library tries its best to fit the coming popup inside the screen. To this
+end it can nudge the popup away from the center of the main window, and, in
+extreme cases, reduce the popup size. However, there is no guarantee that the
+popup will actually fit inside the screen. In particular, do realize that this
+function can't know or control the actual size of a popup. It only makes
+calculations based on the values specified for Scale, Min and Max.  If Scale is
+specified unconstrained, yad and GTK --not this function-- will determine popup
+size.  GTK is the ultimate ruler because yad options `--width` and `--height`
+_request but do not prescribe_ the size of the window. So, if Scale, Min and
+Max values are too small to fit the content in a way that GTK finds agreable,
+GTK will display a larger window, which could possibly fall outside the screen
+boundaries. Similarly, when yad displays a larger (typically taller) window,
+its relative vertical placement over the main window will be off-centered
+(typically offset towards the bottom half of the main window).
 
 **Calling discipline**
 
@@ -344,15 +436,52 @@ Call `yad_lib_set_YAD_GEOMETRY` to set `YAD_GEOMETRY`, then export it and use
 it in a `yad` command-line that starts or re-starts the main yad dialog.
 
 `yad_lib_set_YAD_GEOMETRY` also sets `YAD_GEOMETRY_POPUP` according to
-`$3-popup-scaling`. You can optionally export `YAD_GEOMETRY_POPUP`, and use it
+`$3-popup-scale`. You can optionally export `YAD_GEOMETRY_POPUP`, and use it
 in a `yad` command-line that starts a yad popup sub-dialog, that is, a yad
 window that is intended to show over the main yad dialog window, and be
 quickly dismissed.
 
+The format of `YAD_GEOMETRY`(`_POPUP`) varies by yad version as follows:
+
+> For `YAD_LIB_YAD_VERSION` < 0.40
+```
+--geometry <width>x<height>+<posx>+<posy> --width=<width>  --height=<height>
+```
+
+> For `YAD_LIB_YAD_VERSION` >= 0.40
+```
+--posx=<posx> --posy=<posy> --width=<width>  --height=<height>
+```
+
 **Return value**
 
-Zero on success otherwise `123` silently for invalid positional parameters,
-other non-zero for other errors.
+Zero on success otherwise silently `123` for invalid positional parameters,
+and other non-zero for other errors.
+
+<a name="yad_lib_set_YAD_GEOMETRY_debug"></a>
+
+**Debugging keywords**
+
+> `geometry_popup`  
+Display an information window sized and positioned according to
+`$YAD_GEOMETRY_POPUP`, although size might be larger if contents do not fit.
+If your application calls `yad_lib_set_gtk2_STYLEFILE` the styles will be
+applied to this window. If `$5-popup-message` is set it will be shown.
+
+> `geometry_popup_caller=<n>`  
+Include <n> levels of bash call-stack frame information (default none).
+Non-negative integer `<n>` is passed to the bash `caller` built-in command.
+
+> `geometry_popup_fontsize=<Pango font size>`  
+Pango font size value (default "x-small"). Make it smaller ("xx-small")
+or larger (see the Pango documentation).
+
+> `geometry_popup_icon=<icon>`  
+Set yad `--window-icon` option (fall back to `YAD_OPTIONS` or yad's icon).
+
+```sh
+YAD_LIB_DEBUG="geometry_popup:geometry_popup_caller=2:geometry_popup_fontsize=xx-small:geometry_popup_icon=gtk-dialog-info" your_app
+```
 
 **Example**
 
@@ -389,8 +518,9 @@ Save and execute the following code as an executable shell script.
 
 **More examples**
 
-[dndmate](https://github.com/step-/scripts-to-go/blob/master/dndmate/usr/bin/dndmate)
-is a complete script that calls `yad_lib_set_YAD_GEOMETRY` directly.
+[dndmate](https://github.com/step-/scripts-to-go/blob/master/README.md#dndmate)
+manages a yad paned dialog and several popup subdialogs with the help of
+`yad_lib_set_YAD_GEOMETRY`.  This is a full -- and complex -- example.
 
 ### Blocking and Polling
 
@@ -484,8 +614,8 @@ button dispatching case.
 
 **More examples**
 
-[fatdog-wireless-antenna](https://github.com/step-/scripts-to-go/blob/master/fatdog-wireless-antenna/usr/sbin/fatdog-wireless-antenna.sh)
-is a complete script that uses polling.
+[fatdog-wireless-antenna](https://github.com/step-/scripts-to-go/blob/master/README.md#fatdog-wireless-antenna)
+manages its window with a polling scheme.
 
 ### Theming yad With a GTK2 Style File
 
@@ -516,7 +646,7 @@ allows for editing the file outside this library.
 
 **Return Value**
 
-Zero on success otherwise `123` silently for unknown options or other non-zero
+Zero on success otherwise silently `123` for unknown options, and other non-zero
 for other errors.
 
 **Notes**
@@ -541,10 +671,14 @@ Save and execute the following code as an executable shell script.
 
 ### Sundry
 
-    yad_lib_doc [$1-full-path-of-yad-lib-file]
+    yad_lib_doc [--strip] [$1-full-path-of-yad-lib-file]
 
 Output the embedded markdown documentation. See also section _Usage and
 Documentation_.
+
+**Options**
+
+`--strip` - Output non-documentation lines, that is, just the source code.
 
 **Positional parameters**
 
