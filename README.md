@@ -1,5 +1,5 @@
 title: YAD-LIB  
-date: 2019-11-03  
+date: 2020-08-24  
 homepage: <https://github.com/step-/yad-lib>  
 
 ---
@@ -76,13 +76,13 @@ SPDX-License-Identifier: MIT OR GPL-3.0-or-later
 [github.com/v1cont/yad](https://github.com/v1cont/yad/)
 
 * Fatdog64 800 binary package
-[distro.ibiblio.org/fatdog/packages/800/yad_gtk2-0.42.0_5](http://distro.ibiblio.org/fatdog/packages/800/yad_gtk2-0.42.0_5-x86_64-1.txz)
+[distro.ibiblio.org/fatdog/packages/800/yad_gtk2-0.42.0_14](http://distro.ibiblio.org/fatdog/packages/800/yad_gtk2-0.42.0_5-x86_64-1.txz)
 
 * Fatdog64 800 source (the build recipe can be found under `/usr/src` in the binary package)
 [distro.ibiblio.org/fatdog/source/800/yad_gtk2-62d54eb5bf5ae2457c6986c33c6de89a6284f969.tar.gz](http://distro.ibiblio.org/fatdog/source/800/yad_gtk2-62d54eb5bf5ae2457c6986c33c6de89a6284f969.tar.gz)
 
 * Puppy Linux forum - yad tips thread
-[murga-linux.com/puppy/viewtopic.php?p=908353#908353](http://murga-linux.com/puppy/viewtopic.php?p=908353#908353)
+[http://oldforum.puppylinux.com/puppy/viewtopic.php?t=97458](http://oldforum.puppylinux.com/puppy/viewtopic.php?t=97458)
 
 **:2** Fatdog64 Linux
 [distro.ibiblio.org/fatdog/web/](http://distro.ibiblio.org/fatdog/web/)
