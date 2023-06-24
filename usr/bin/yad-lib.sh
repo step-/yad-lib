@@ -94,32 +94,35 @@ Your script may set this variable before sourcing the library file.
 
 By default library initialization occurs automatically upon sourcing the
 library file.  Initialization benefits some but not all library functions.
-If your application does not call those functions it can disable automatic
-initialization for a faster start.  Use:
+If your application will not call those functions it can disable automatic
+initialization by setting global variable `YAD_LIB_INIT` as follows:
 
 ```sh
-YAD_LIB_INIT="-1" . yad-lib.sh
+YAD_LIB_INIT="-1"; . yad-lib.sh
 ```
-
-to source the library without automatic initialization. Then use:
+Then the application may initialize the library manually with:
 
 ```sh
-yad_lib_init [yad-version]
+yad_lib_init [$1-yad-version]
 ```
 
-to explicitly perform initialization. If `yad-version` is empty, `yad_lib_init`
-will fill it by running `yad --version` and taking the first output word.
+`$1-yad-version` is a version string, `major`.`minor`.`revision`.
+If `$1-yad-version` is empty, `yad_lib_init` runs yad to extract
+the version string and set `YAD_LIB_YAD_VERSION`.
+
 `yad_lib_init` sets the following global variables:
 
-```
-Name                     Flags    Benefits
+| Name                     | Notes   | Used by                  |
+|--------------------------|---------|--------------------------|
+| YAD_LIB_SCREEN_HEIGTH    | e       | yad_lib_set_YAD_GEOMETRY |
+| YAD_LIB_SCREEN_WIDTH     | e       | yad_lib_set_YAD_GEOMETRY |
+| YAD_LIB_YAD_VERSION      | e       | yad_lib_set_YAD_GEOMETRY |
+| YAD_LIB_YAD              | e       |                          |
+| YAD_VER_CAP              | e 1     |                          |
+| YAD_STOCK_BTN            | e 1     |                          |
 
-YAD_LIB_SCREEN_HEIGTH    e        yad_lib_set_YAD_GEOMETRY
-YAD_LIB_SCREEN_WIDTH     e        yad_lib_set_YAD_GEOMETRY
-YAD_LIB_YAD_VERSION      e        yad_lib_set_YAD_GEOMETRY
-```
-
-e = export
+e = exported  
+1 = only set if `$1-yad-version` is empty; see `yad_lib_require_yad`.  
 
 MARKDOWNDOC
 
@@ -150,8 +153,11 @@ The following keywords are supported:
 MARKDOWNDOC
 
 yad_lib_init () { # [$1-yad-version] {{{1
-  if ! [ "$1" ]; then
-    set -- $(yad --version)
+  if [ -z "$1" ]; then
+    yad_lib_require_yad 0 0 0 || :
+    set -- ${YAD_VER_CAP%%:*}
+    set -- "$1.$2.$3"
+    export YAD_VER_CAP YAD_STOCK_BTN
   fi
   export YAD_LIB_YAD_VERSION="$1"
   set -- $(xwininfo -root | awk -F: '
