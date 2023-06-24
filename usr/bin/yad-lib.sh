@@ -3,11 +3,11 @@
 
 # META-begin
 # yad-lib.sh - utilities for yad.
-# Copyright (C) step, 2018-2020
+# Copyright (C) step, 2018-2023
 # Dual license: GNU GPL Version 3 or MIT
 # Homepage=https://github.com/step-/yad-lib
 # Requirements: see section _Compatibility and Requirements_
-# Version=1.2.1
+# Version=1.3.0
 # META-end
 
 : << 'MARKDOWNDOC' # {{{1 Title; Do You Need This Library?
@@ -76,10 +76,9 @@ Conversely, to strip off markdown text and produce a smaller library file:
 
 ## Compatibility and Requirements
 
-This library is compatible with `sh`, `bash`, `dash`, and `ash` (busybox). It
-is intended for and tested with GTK2.
-
-This library requires `xwininfo`, `awk`, and the proc file system.
+This library is compatible with `sh`, `bash`, `dash`, and `ash` (busybox).
+It is tested with `yad_gtk2` and `yad_gtk3`.
+It requires `xwininfo`, `awk`, and the proc file system.
 
 ## Functions
 MARKDOWNDOC
