@@ -988,6 +988,64 @@ button dispatching case.
 manages its window with a polling scheme.
 MARKDOWNDOC
 
+: << 'MARKDOWNDOC' # {{{1 yad_lib_require_yad
+
+### Requiring a specific yad version
+
+```sh
+    yad_lib_require_yad $1-x $2-y $3-z
+```
+
+Set global variable `YAD_VER_CAP` to the concatenation of strings
+* `x y z` - the version major, minor, and revision numbers of the yad binary.
+* `:gtk`(`2`|`3`) - the GTK+ toolkit version of the running file
+* (`:`_capability_)* - other version-dependent capability of the yad binary:
+  `text-lang`, `selectable-labels`.
+
+Set global variable `YAD_STOCK_BTN` to string `gtk` if the binary is built for
+GTK+-2 otherwise string `yad`. This can be used to set GTK+ version-independent
+button stock icons, e.g. `yad --yad-button="$YAD_STOCK_BTN-ok"`.
+
+**Positional parameters**
+
+`$1-x` required major  
+`$2-y` required minor  
+`$3-z` required revision  
+
+**Return Value**
+
+Zero if the version of yad binary is at least the required x.y.z, non-zero otherwise.
+MARKDOWNDOC
+
+yad_lib_require_yad () { # $1-x $2-y $3-z {{{1 => $YAD_VER_CAP = 'x y z'':gtk'('2'|'3')':'() / $YAD_STOCK_BTN = ('gtk'|'yad')
+  local x="${1:?}" y="${2:?}" z="${3:?}" IFS info
+  unset YAD_VER_CAP YAD_STOCK_BTN
+  info="$(${YAD_LIB_YAD:-yad} --version)"
+  [ -n "$info" ] || return 1
+
+  # yad --version sample output (one line):
+  # line 1: "0.42.43 (GTK+ 3.24.31)"
+  set -- $info
+  IFS="."; set -- $1 # version x.y.z
+  YAD_VER_CAP="$1 $2 ${3:-0}"
+
+  case "$info" in
+    *'GTK+ 2'* ) YAD_VER_CAP="$YAD_VER_CAP:gtk2" ;;
+    *'GTK+ 3'* ) YAD_VER_CAP="$YAD_VER_CAP:gtk3" ;;
+  esac
+
+  ### frequently-used :capa:bili:ties that can be tricky to assess
+  [ \( $1 -eq 0 -a $2 -eq 42 -a ${3:-0} -ge 16 \) -o \( $1 -eq 0 -a $2 -gt 42 \) -o $1 -gt 0 ] &&
+    YAD_VER_CAP="$YAD_VER_CAP:text-lang"
+  [ \( $1 -eq 0 -a $2 -eq 42 -a ${3:-0} -ge 25 \) -o \( $1 -eq 0 -a $2 -gt 42 \) -o $1 -gt 0 ] &&
+    YAD_VER_CAP="$YAD_VER_CAP:selectable-labels" # is present but broken in earlier versions
+
+  # for version 0.x it's --button=gtk-ok otherwise it's --button=yad-ok
+  [ "$1" = '0' ] && YAD_STOCK_BTN='gtk' || YAD_STOCK_BTN='yad'
+
+  [ \( $1 -eq $x -a $2 -eq $y -a ${3:-0} -ge $z \) -o \( $1 -eq $x -a $2 -gt $y \) -o $1 -gt $x ]
+}
+
 : << 'MARKDOWNDOC' # {{{1 yad_lib_set_gtk2_STYLEFILE
 
 ### Theming yad With a GTK2 Style File
