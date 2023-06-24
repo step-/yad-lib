@@ -145,8 +145,7 @@ The following keywords are supported:
 
 MARKDOWNDOC
 
-yad_lib_init() # [$1-yad-version] {{{1
-{
+yad_lib_init () { # [$1-yad-version] {{{1
   if ! [ "$1" ]; then
     set -- $(yad --version)
   fi
@@ -190,7 +189,7 @@ that the next yad can use to set its geometry.
 
 First, Your script should call the main dispatcher function `yad_lib_dispatch`
 at the beginning of the main body, after performing initialization commands,
-and before parsing script argument.  Then the yad command(s) within the main
+and before parsing script arguments.  Then the yad command(s) within the main
 body should include some `--button` option(s) to dispatch target functions.
 
 ***Caveat:*** your script must start with a shebang line to set the
@@ -455,9 +454,10 @@ yad_lib_internal_restart_app () { # $1-signal $2-script-pid $3-yad-pid $4-termin
   true
 }
 
-yad_lib_at_exec_popup_yad() # [$@-args] {{{1
-# Invoke as: sh -c "$0 yad_lib_at_exec_popup_yad"
-{
+yad_lib_at_exec_popup_yad () { # [$@-args] {{{1
+# This function does not return
+# Invocation in a yad --button:
+#   sh -c "'$0' yad_lib_at_exec_popup_yad"
   yad_lib_set_YAD_GEOMETRY '' '' && export YAD_GEOMETRY YAD_GEOMETRY_POPUP
   exec yad $YAD_GEOMETRY_POPUP "$@"
 }
@@ -656,7 +656,7 @@ manages a yad paned dialog and several popup subdialogs with the help of
 `yad_lib_set_YAD_GEOMETRY`.  This is a full -- and complex -- example.
 MARKDOWNDOC
 
-yad_lib_set_YAD_GEOMETRY() # $1-window-xid $2-window-title $3-popup-scale $4-popup-position $5-popup-message {{{1
+yad_lib_set_YAD_GEOMETRY () { # $1-window-xid $2-window-title $3-popup-scale $4-popup-position $5-popup-message {{{1
 # Compute the geometry of window $1, if any, otherwise of the parent yad
 # window.  If neither one exists, compute for window title $2, if any,
 # otherwise for window title YAD_TITLE. Assign global YAD_GEOMETRY to the
@@ -672,7 +672,6 @@ yad_lib_set_YAD_GEOMETRY() # $1-window-xid $2-window-title $3-popup-scale $4-pop
 # to snap to the named main window side, or "" to center over the main window.
 # Popup message $5 is ignored unless YAD_LIB_DEBUG includes "geometry_popup".
 # Return 0 on successful assignments, 123 on bad arguments, 1 otherwise.
-{
   local xid="${1:-$YAD_XID}" title="${2:-$YAD_TITLE}" scale="${3:-90:50:-1:-1:-1:-1}" position="${4:-center}" popup_message="$5" t a w h x y
   local title_bar_height # auto-detected; set some pixel value to override
   local geometry_popup geometry_popup_caller geometry_popup_fontsize geometry_popup_icon
@@ -1044,8 +1043,7 @@ Save and execute the following code as an executable shell script.
 ```
 MARKDOWNDOC
 
-yad_lib_set_gtk2_STYLEFILE() # $1-style-content-keyword(compact) {{{1
-{
+yad_lib_set_gtk2_STYLEFILE () { # $1-style-content-keyword(compact) {{{1
   local a0="${0##*/}"
   local opt_pid_name
   while [ $# -gt 0 ]; do
@@ -1128,10 +1126,9 @@ non-standard location not included in your `PATH` variable.
 Zero on success, non-zero on error.
 MARKDOWNDOC
 
-yad_lib_doc() # [--strip] $1-fullpath-of-yad-lib-file {{{1
-{
+yad_lib_doc () { # [--strip] $1-fullpath-of-yad-lib-file {{{1
   local strip this
-  if [ --strip == "$1" ]; then strip=1; shift; fi
+  if [ "$1" = '--strip' ]; then strip=1; shift; fi
   this=$1
   if ! [ -s "$this" ]; then
     ls "$this" # print generic error message
