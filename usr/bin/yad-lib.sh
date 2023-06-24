@@ -431,7 +431,8 @@ yad_lib_internal_restart_app () { # $1-signal $2-script-pid $3-yad-pid $4-termin
 
   # Close the target dialog (also further down).
   if [ "$terminate_then_restart" ]; then
-    kill -$signal $yad_pid $YAD_PID 2>/dev/null &&
+    kill -$signal $yad_pid 2> /dev/null
+    wait $yad_pid 2> /dev/null
     sleep $terminate_then_restart
   fi
 
@@ -448,7 +449,8 @@ yad_lib_internal_restart_app () { # $1-signal $2-script-pid $3-yad-pid $4-termin
   # If in --button context the caller of this function should exit.
   # If not in --button context the main script unblocks from yad.
   if ! [ "$terminate_then_restart" ]; then
-    kill -$signal $yad_pid $YAD_PID 2>/dev/null
+    kill -$signal $yad_pid 2> /dev/null
+    wait $yad_pid 2> /dev/null
   fi
   true
 }
