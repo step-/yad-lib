@@ -88,6 +88,10 @@ MARKDOWNDOC
 
 ### Initialing the Library
 
+The library may need to run the yad command. It will look up exported variable
+`YAD_LIB_YAD` for the name or pathname of a binary file, and default to `yad`.
+Your script may set this variable before sourcing the library file.
+
 By default library initialization occurs automatically upon sourcing the
 library file.  Initialization benefits some but not all library functions.
 If your application does not call those functions it can disable automatic
@@ -459,7 +463,7 @@ yad_lib_at_exec_popup_yad () { # [$@-args] {{{1
 # Invocation in a yad --button:
 #   sh -c "'$0' yad_lib_at_exec_popup_yad"
   yad_lib_set_YAD_GEOMETRY '' '' && export YAD_GEOMETRY YAD_GEOMETRY_POPUP
-  exec yad $YAD_GEOMETRY_POPUP "$@"
+  exec ${YAD_LIB_YAD:-yad} $YAD_GEOMETRY_POPUP "$@"
 }
 
 : << 'MARKDOWNDOC' # {{{1 yad_lib_set_YAD_GEOMETRY
@@ -830,7 +834,8 @@ function debug_popup(result,   A, argm, args, btn, c, dlg, fld, flds, geo1, geo2
 
   srand()
   prey = nbtn "=" substr(rand() + .1, 3)
-  yad  = "yad --borders=000" # "=000" to exclude non-debug yads
+  yad  = ENVIRON["YAD_LIB_YAD"]
+  yad  = (yad == "" ? "yad" : yad)" --borders=000" # "=000" to exclude non-debug yads
   klmq = "pkill -f " (q "^" yad prey spc q) # kill mine
   klaq = "pkill -f " (q "^" yad      spc q) # kill all
   dlg  = esc(icoq) nbtn
