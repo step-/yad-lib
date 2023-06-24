@@ -314,8 +314,7 @@ terminate the calling yad instance. It is an error to not insert `--` in
 front of the passed arguments.
 
 `--exit[=<integer>]` - Exit the current process after terminating the calling
-yad instance. The process exits with status `<integer>`, if given, otherwise
-with an internal status value (non-zero for error).
+yad instance. The process exits with status `<integer>` (default 0).
 
 `--get-cmdline=<integer>` - If `$@-script-arguments` is empty restart the
 script passing the command-line that started process id `<integer>`.  This
@@ -333,10 +332,13 @@ value of `$$` as the process id. Typical usage:
 
 `--no-capture` - Inhibit output of the terminating yad dialog.
 
-`--terminate-then-restart` - For esthetic reasons, by default a new yad dialog
-is started before the calling yad dialog is terminated. This option swaps this
-order, which can be useful when the restarting script needs to read the
-terminating yad dialog's output before the new yad dialog can be started.
+`--terminate-then-restart[=<sleep>]` - By default a new script instance is
+started before the running yad is terminated.  With --terminate-then-restart
+the order of these operations is swapped; first the running yad is terminated
+then a new script instance is started.  This can be  be used when the
+  restarting script needs to read the terminating yad dialog's output.
+  `<sleep>` is the fractional number of seconds to wait between terminating yad and
+  restarting the script (default `0.5`).
 
 `--yad-pid=<integer>` - Terminate the yad dialog whose process id equals
 `<integer>`. You must specify this option when `yad_lib_at_restart_app` is not
@@ -398,23 +400,25 @@ yad_lib_at_restart_app () { # [options] ['--' $@-args] {{{1
   while [ $# -gt 0 ]; do
     case $1 in
       --exit ) opt_exit=exit ;;
-      --exit=* ) opt_exit=${1#*=} ;;
-      --get-cmdline=* ) opt_get_cmdline=${1#*=} ;;
+      --exit=?* ) opt_exit=${1#*=} ;;
+      --get-cmdline=?* ) opt_get_cmdline=${1#*=} ;;
       --no-capture ) opt_no_capture=no_capture ;;
-      --signal=* ) opt_signal=${1#*} ;; # UNDOCUMENTED
-      --terminate-then-restart ) opt_terminate_then_restart=terminate_then_restart ;;
-      --yad-pid=* ) opt_yad_pid=${1#*=} ;; # required iff not in --button
-      --* ) return 123 ;;
-      * ) break ;;
+      --signal=?* ) opt_signal=${1#*} ;; # UNDOCUMENTED
+      --terminate-then-restart ) opt_terminate_then_restart="0.5" ;;
+      --terminate-then-restart=?* ) opt_terminate_then_restart="${1#*=}" ;;
+      --yad-pid=?* ) opt_yad_pid=${1#*=} ;; # required iff not in --button
+      -- ) shift; break ;;
+      * ) return 123 ;;
     esac
     shift
   done
   [ "$opt_no_capture" ] && opt_signal=USR2
   yad_lib_internal_restart_app ${opt_signal:-USR1} "$opt_get_cmdline" "$opt_yad_pid" "$opt_terminate_then_restart" "$@"
-  local ret=$?
+  # this exits the previous instance of the script
+  # not the one that was just restarted
   case "$opt_exit" in
     [0-9]* ) exit $opt_exit ;;
-    exit ) exit $ret ;;
+    exit ) exit ;;
   esac
   return $(( $ret > 0 ? $ret - $# : 0 ))
 }
@@ -428,7 +432,7 @@ yad_lib_internal_restart_app () { # $1-signal $2-script-pid $3-yad-pid $4-termin
   # Close the target dialog (also further down).
   if [ "$terminate_then_restart" ]; then
     kill -$signal $yad_pid $YAD_PID 2>/dev/null &&
-    sleep 0.5
+    sleep $terminate_then_restart
   fi
 
   # Restart the dialog-displaying script, which will pick up the exported
