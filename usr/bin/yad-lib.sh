@@ -206,6 +206,7 @@ Save and execute the following code as an executable shell script.
     . yad-lib.sh
 
     yad_lib_dispatch "$@"
+    shift $?
 
     # parse script arguments
 
@@ -272,6 +273,7 @@ and learn how to preserve yad position and size.
 
 ```sh
     yad_lib_dispatch [$@-arguments]
+    shift $?
 ```
 
 **Positional parameters**
@@ -286,7 +288,10 @@ the dispatching function.
 
 **Return value**
 
-Return the return value of the dispatch target function.
+Return the return value of the dispatch target function. This is most useful
+when the dispatch target is `yad_lib_at_restart_app` and `yad_lib_dispatch`
+is passed target's options and script arguments. Then add `shift $?` after
+`yad_lib_dispatch` to consume the target's options.
 
 ### Full syntax of the dispatch target functions
 
@@ -339,9 +344,8 @@ called from a button of the terminating yad dialog.
 
 **Return value**
 
-`123` on an invalid option otherwise this function doesn't return if
-option `--exit` is given. Without `--exit` the return value is zero for success
-or a non-zero internal code for errors.
+`123` on an invalid option, otherwise return the number of parsed options.
+This function doesn't return if option `--exit` is given.
 
 ----
 
@@ -375,19 +379,21 @@ source `yad-lib.sh` _before_ the redefined function definition.
 MARKDOWNDOC
 
 yad_lib_dispatch () { # $1-target-function [[target-function-args] '--' script-args] {{{1
-# Return the return value of the target function.
+# Return the return value of the target function. This is most useful when
+# calling `yad_lib_dispatch yad_lib_at_restart_app option... -- script-args`
+# to consume `option... --` with `shift $?`.
   case $1 in
     yad_lib_at_* ) "$@" ;;
   esac
 }
 
 yad_lib_at_restart_app () { # [options] ['--' $@-args] {{{1
-# Return 123 on invalid options.
-# No return if option --exit was given. Invocation:
+# Return 123 on invalid options otherwise return the number of
+# parsed options. No return if option --exit was given. Invocation:
 #   in a yad -=button option:
-#     sh -c "'$0' yad_lib_at_restart_app ...
+#     sh -c "'$0' yad_lib_at_restart_app ...; shift $?"
 #   in a script
-#     yad_lib_at_restart_app ...
+#     yad_lib_at_restart_app ... ; shift $?
   local opt_exit opt_get_cmdline opt_no_capture opt_signal opt_terminate_then_restart opt_yad_pid ret=$#
   while [ $# -gt 0 ]; do
     case $1 in
@@ -410,11 +416,11 @@ yad_lib_at_restart_app () { # [options] ['--' $@-args] {{{1
     [0-9]* ) exit $opt_exit ;;
     exit ) exit $ret ;;
   esac
-  return $ret
+  return $(( $ret > 0 ? $ret - $# : 0 ))
 }
 
-yad_lib_internal_restart_app() # $1-signal $2-script-pid $3-yad-pid $4-terminate-then-restart [$@5-args] {{{1 UNDOCUMENTED
-{
+yad_lib_internal_restart_app () { # $1-signal $2-script-pid $3-yad-pid $4-terminate-then-restart [$@5-args] {{{1 UNDOCUMENTED
+# Return 0.
   local signal="$1" script_pid="$2" yad_pid="${3:-$YAD_PID}" terminate_then_restart="$4"; shift 4
   # Export current dialog geometry.
   yad_lib_set_YAD_GEOMETRY '' '' && export YAD_GEOMETRY YAD_GEOMETRY_POPUP
@@ -432,8 +438,6 @@ yad_lib_internal_restart_app() # $1-signal $2-script-pid $3-yad-pid $4-terminate
   else
     "$0" "$@" &
   fi
-  local ret=$?
-  [ 0 != $ret ] && return $ret
   sleep 0.2
 
   # Close the target dialog.
@@ -442,6 +446,7 @@ yad_lib_internal_restart_app() # $1-signal $2-script-pid $3-yad-pid $4-terminate
   if ! [ "$terminate_then_restart" ]; then
     kill -$signal $yad_pid $YAD_PID 2>/dev/null
   fi
+  true
 }
 
 yad_lib_at_exec_popup_yad() # [$@-args] {{{1
@@ -942,6 +947,7 @@ Save and execute the following code as an executable shell script.
     seconds=3
 
     yad_lib_dispatch "$@"
+    shift $?
 
     # parse script arguments
 
