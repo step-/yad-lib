@@ -3,11 +3,11 @@
 
 # META-begin
 # yad-lib.sh - utilities for yad.
-# Copyright (C) step, 2018-2020
+# Copyright (C) step, 2018-2023
 # Dual license: GNU GPL Version 3 or MIT
 # Homepage=https://github.com/step-/yad-lib
 # Requirements: see section _Compatibility and Requirements_
-# Version=1.2.1
+# Version=1.3.0
 # META-end
 
 : << 'MARKDOWNDOC' # {{{1 Title; Do You Need This Library?
@@ -19,43 +19,34 @@ homepage: <https://github.com/step-/yad-lib>
 
 ## Do You Need This Library?
 
-[Yad](https://github.com/v1cont/yad) is a GTK dialog program that is much
-simpler to use than Gtkdialog.  However, there are some common windowing
-actions that are somewhat hard to do with yad until one has discovered the
-right tricks. This shell library, _yad-lib.sh_, distills some of those tricks
-into functions that you can use in your own scripts.
+This shell library provides functions for restarting a yad dialog in the same
+position and with the same size that the user set before the restart was
+initiated.
 
-The main goal of this library is easily restarting a yad dialog in a way that
-makes the dialog position and size predictable and repeatable, thus
-contributing to a better user experience.
+Section _Dispatching yad_ describes functions that allow controlling yad's
+initial dialog position and size.
 
-Section _Dispatching yad_ describes how to structure scripts that can control
-yad dialog position and size.
+Section _Keeping yad Window Position and Size_, describes functions that
+calculate the X11 geometry of the main dialog and of an optional popup dialog.
 
-Section _Keeping yad Window Position and Size_, describes
-`yad_lib_set_YAD_GEOMETRY`, the function that achieves the main goal.
+The remaining sections describe various functions for advanced yad usage.
 
-The remaining sections describe other functions that can be useful when dealing
-with yad, such as theming GTK2 yad, etc.
+When do you need this library?  If your script restarts yad several times,
+possibly stacking two yad dialogs, and you want to improve the user experience.
 
-Do you need this library? If your yad script just shows some static data, and
-accepts (OK) or rejects (Cancel) the data, never restarting yad, or it just
-shows and processes an input form then terminates, then it's unlikely that you
-need this library. Since your script runs yad without restarting it, keeping
-dialog position and size isn't a question for you. Yet, you may still find some
-of the other functions in this library useful.
-
-But if your shell script needs to restart the dialog several times, for
-instance to refresh some dynamic data while the script keeps running, then you
-know by experience that yad isn't designed to restart the dialog where it was
-before, and you wish that you could do that as easily as other multi-window GUI
-applications can do. Then you probably need this library.
+This library is included in [Fatdog64
+Linux](http://distro.ibiblio.org/fatdog/web/).  Fatdog64 provides three yad
+packages: `yad_gtk2` (default) and `yad_gtk3` - both built from the [GTK2
+maintenance branch](https://github.com/step-/yad/tree/maintain-gtk2);
+`yad_ultimate` built from the [upstream yad
+repo](https://github.com/v1cont/yad).
 
 ## Usage and Documentation
 
 Source code and documentation are hosted on
-[github](https://github.com/step-/yad-lib) where you can also open support
-tickets (issues) and contribute your Pull Requests (PR).
+[github](https://github.com/step-/yad-lib). For support open a new
+[issue](https://github.com/step-/yad-lib/issues).  Contributions in the form of
+[pull request](https://github.com/step-/yad-lib/pulls) are welcome.
 
 To use the library source its file from your shell script.
 
@@ -74,7 +65,7 @@ viewer, which comes pre-installed in
 [Fatdog64 Linux](http://distro.ibiblio.org/fatdog/web/):
 
 ```sh
-( . yad-lib.sh && yad_lib_doc [> /tmp/yad-lib.md && mdview /tmp/yad-lib.md ) &
+( . yad-lib.sh && yad_lib_doc > /tmp/yad-lib.md && mdview /tmp/yad-lib.md ) &
 ```
 
 Conversely, to strip off markdown text and produce a smaller library file:
@@ -85,11 +76,9 @@ Conversely, to strip off markdown text and produce a smaller library file:
 
 ## Compatibility and Requirements
 
-This library is compatible with `sh`, `bash`, `dash`, and `ash` (busybox). It
-is intented for and tested with GTK2. It should work with yad versions as
-early as 0.36.3. However, you are encouraged to updated yad to version 0.42.
-
-This library requires `xwininfo`, `awk`, the proc file system.
+This library is compatible with `sh`, `bash`, `dash`, and `ash` (busybox).
+It is tested with `yad_gtk2` and `yad_gtk3`.
+It requires `xwininfo`, `awk`, and the proc file system.
 
 ## Functions
 MARKDOWNDOC
@@ -98,34 +87,41 @@ MARKDOWNDOC
 
 ### Initialing the Library
 
+The library may need to run the yad command. It will look up exported variable
+`YAD_LIB_YAD` for the name or pathname of a binary file, and default to `yad`.
+Your script may set this variable before sourcing the library file.
+
 By default library initialization occurs automatically upon sourcing the
 library file.  Initialization benefits some but not all library functions.
-If your application does not call those functions it can disable automatic
-initialization for a faster start.  Use:
+If your application will not call those functions it can disable automatic
+initialization by setting global variable `YAD_LIB_INIT` as follows:
 
 ```sh
-YAD_LIB_INIT="-1" . yad-lib.sh
+YAD_LIB_INIT="-1"; . yad-lib.sh
 ```
-
-to source the library without automatic initialization. Then use:
+Then the application may initialize the library manually with:
 
 ```sh
-yad_lib_init [yad-version]
+yad_lib_init [$1-yad-version]
 ```
 
-to explicitly perform initialization. If `yad-version` is empty, `yad_lib_init`
-will fill it by running `yad --version` and taking the first output word.
+`$1-yad-version` is a version string, `major`.`minor`.`revision`.
+If `$1-yad-version` is empty, `yad_lib_init` runs yad to extract
+the version string and set `YAD_LIB_YAD_VERSION`.
+
 `yad_lib_init` sets the following global variables:
 
-```
-Name                     Flags    Benefits
+| Name                     | Notes   | Used by                  |
+|--------------------------|---------|--------------------------|
+| YAD_LIB_SCREEN_HEIGTH    | e       | yad_lib_set_YAD_GEOMETRY |
+| YAD_LIB_SCREEN_WIDTH     | e       | yad_lib_set_YAD_GEOMETRY |
+| YAD_LIB_YAD_VERSION      | e       | yad_lib_set_YAD_GEOMETRY |
+| YAD_LIB_YAD              | e       |                          |
+| YAD_VER_CAP              | e 1     |                          |
+| YAD_STOCK_BTN            | e 1     |                          |
 
-YAD_LIB_SCREEN_HEIGTH    e        yad_lib_set_YAD_GEOMETRY
-YAD_LIB_SCREEN_WIDTH     e        yad_lib_set_YAD_GEOMETRY
-YAD_LIB_YAD_VERSION      e        yad_lib_set_YAD_GEOMETRY
-```
-
-e = export
+e = exported  
+1 = only set if `$1-yad-version` is empty; see `yad_lib_require_yad`.  
 
 MARKDOWNDOC
 
@@ -155,10 +151,12 @@ The following keywords are supported:
 
 MARKDOWNDOC
 
-yad_lib_init() # [$1-yad-version] {{{1
-{
-  if ! [ "$1" ]; then
-    set -- $(yad --version)
+yad_lib_init () { # [$1-yad-version] {{{1
+  if [ -z "$1" ]; then
+    yad_lib_require_yad 0 0 0 || :
+    set -- ${YAD_VER_CAP%%:*}
+    set -- "$1.$2.$3"
+    export YAD_VER_CAP YAD_STOCK_BTN
   fi
   export YAD_LIB_YAD_VERSION="$1"
   set -- $(xwininfo -root | awk -F: '
@@ -176,35 +174,34 @@ END {
 
 ### Dispatching yad
 
-Reading this section may prompt you to re-think how your complex yad scripts
-work, and to re-write the parts that aren't compatible with the approach
-presented here.
+In this document the term "dispatching" means restarting the main script in a
+way that sets the geometry of the next yad window as it was set by the user
+by dynamically resizing and moving the previous yad window.
+Dispatching involves terminating the currently running script when yad is closed
+then restarting another instance of the script, which will restart yad.
 
-In this document we say we "dispatch" yad when we _program a yad button_ or the
-_main script_ to restart the main script and yad with it in a predictable
-position and size.  This involves closing the currently displayed yad script
-then restarting the main script, which restarts yad. But why should we do this?
-Simply because closing yad is the only way to make it output the data that its
-widgets hold. If you want to further process that data you need to terminate
-yad in the first place.  Let's review the ways you can terminate yad:
+Let's recap how to terminate yad and what happens to the user data yad holds:
 
-1. Clicking button `OK` and pressing the Enter key outputs data.
-   Clicking button `Cancel` and pressing the Escape key does not output data.
+1. Clicking button `OK` and pressing the Enter key outputs the data.
+   Clicking `Cancel` and pressing the Escape key does not output the data.
 
-2. Closing the window from the `[x]` corner icon does not output data.
+2. Closing the window from the window title bar does not output the data.
 
-3. Orderly killing the yad process outputs data. Unorderly killing it doesn't.
+3. Killing yad with `SIGUSR1` makes it output the data while `SIGUSR2` does not.
+   Yad doesn't otherwise catch other signals.
 
-Dispatching uses method #3 and picks up after it. Let's learn how.
+In case #3, dispatching captures the window geometry immediately before killing
+the current yad, then it restarts the main script passing environment variables
+that the next yad can use to set its geometry.
 
 **Dispatching from a yad button**
 
-First, Your script should call function `yad_lib_dispatch` at the beginning of
-the main body, that is after performing initialization commands, and before
-argument parsing.  Then the yad command(s) within the main body should include
-some `--button` option(s) to initiate dispatching.
+First, Your script should call the main dispatcher function `yad_lib_dispatch`
+at the beginning of the main body, after performing initialization commands,
+and before parsing script arguments.  Then the yad command(s) within the main
+body should include some `--button` option(s) to dispatch target functions.
 
-***Caveat:*** your script must start with a shebang line that sets the intended
+***Caveat:*** your script must start with a shebang line to set the
 script interpreter, for instance, `#!/bin/sh`. Without the shebang,
 `yad_lib_dispatch` will fail in a subtle way.
 
@@ -217,6 +214,7 @@ Save and execute the following code as an executable shell script.
     . yad-lib.sh
 
     yad_lib_dispatch "$@"
+    shift $?
 
     # parse script arguments
 
@@ -229,13 +227,14 @@ Save and execute the following code as an executable shell script.
     # process output data, etc.
 ```
 
-In the above example button `Capture Output` terminates yad making it output
-its contents for the rest of the script to process (following perhaps a shell
-pipe or output redirection). All options after `yad_lib_at_restart_app` are
-optional (see full syntax description further down). Take note that an explicit
-`--exit` is needed to end the calling script--otherwise you may end up with
-multiple running yad dialogs.  If `$0`, the path to your script, contains no
-spaces, a simpler `--button` syntax can be used:
+In the above example button, `yad_lib_dispatch` is the dispatcher function,
+and `yad_lib_at_restart_app` is the dispatch target function.  The action in
+`Capture Output` terminates the current yad and makes it output its contents,
+which other parts of the script can process.
+Options, if any, after `yad_lib_at_restart_app` are described further down. Take
+note that an explicit `--exit` is needed to end the calling script--otherwise
+you may end up with multiple running yad dialogs.  If `$0`, the path to the
+script, contains no spaces, a simpler `--button` syntax can be used:
 
 ```sh
     --button="_Capture Output:$0 yad_lib_at_restart_app --exit --get-cmdline=$$"
@@ -274,14 +273,15 @@ script needs to handle its entire life cycle.
 **Dispatching from the main script**
 
 Function `yad_lib_at_restart_app` can be used directly from the main script,
-instead of from within a yad button.  Section _Polling and Messaging_ will show
+instead of from a yad button.  Section _Polling and Messaging_ will show
 how.  Before then let's look at the full syntax of the dispatching functions,
 and learn how to preserve yad position and size.
 
-**Full syntax of the dispatching functions**
+### Full syntax of the dispatcher function
 
 ```sh
     yad_lib_dispatch [$@-arguments]
+    shift $?
 ```
 
 **Positional parameters**
@@ -290,18 +290,22 @@ _Note:_ `$@-arguments` _is a shorthand indicating one or more shell positional
 parameters._
 
 `$@-arguments` - The command-line arguments for the instance of your script
-that is about to start. The first positional paramenter must be the name of one
+that is about to start. The first positional parameter must be the name of one
 of the following dispatching functions.  The remaining parameters are passed to
 the dispatching function.
 
 **Return value**
 
-See the description of the dispatching function.
+Return the return value of the dispatch target function. This is most useful
+when the dispatch target is `yad_lib_at_restart_app` and `yad_lib_dispatch`
+is passed target's options and script arguments. Then add `shift $?` after
+`yad_lib_dispatch` to consume the target's options.
 
-----
+### Full syntax of the dispatch target functions
+
 
 ```sh
-    yad_lib_at_restart_app [options] [$@-script-arguments]
+    yad_lib_at_restart_app [options] ['--' $@-script-arguments]
 ```
 
 When `yad_lib_at_restart_app` is called, a new yad instance is started, then
@@ -313,17 +317,17 @@ file.  Optionally, data output can be inhibited.
 **Positional parameters**
 
 `$@-script-arguments` - Pass these arguments to the restarting script (`$0`).
-The new process will be assigned a new process id.  This function will
-terminate the calling yad instance.
+The new process will take a new process id.  `yad_lib_at_restart_app` will
+terminate the calling yad instance. It is an error to not insert `--` in
+front of the passed arguments.
 
 `--exit[=<integer>]` - Exit the current process after terminating the calling
-yad instance. The process exits with status `<integer>`, if given, otherwise
-with an internal status value (non-zero for error).
+yad instance. The process exits with status `<integer>` (default 0).
 
 `--get-cmdline=<integer>` - If `$@-script-arguments` is empty restart the
-script with the command-line that started process id `<integer>`.  This option
-requires the proc file system.  In most cases you should pass the value of `$$`
-as the process id. Typical usage:
+script passing the command-line that started process id `<integer>`.  This
+option requires the `proc` file system.  In most cases you should pass the
+value of `$$` as the process id. Typical usage:
 
 ```sh
     yad --button="label:sh -c \"exec '$0' --get-cmdline=$$\""
@@ -336,20 +340,22 @@ as the process id. Typical usage:
 
 `--no-capture` - Inhibit output of the terminating yad dialog.
 
-`--terminate-then-restart` - For esthetic reasons, by default a new yad dialog
-is started before the calling yad dialog is terminated. This option swaps this
-order, which can be useful when the restarting script needs to read the
-terminating yad dialog's output before the new yad dialog can be started.
+`--terminate-then-restart[=<sleep>]` - By default a new script instance is
+started before the running yad is terminated.  With --terminate-then-restart
+the order of these operations is swapped; first the running yad is terminated
+then a new script instance is started.  This can be  be used when the
+  restarting script needs to read the terminating yad dialog's output.
+  `<sleep>` is the fractional number of seconds to wait between terminating yad and
+  restarting the script (default `0.5`).
 
 `--yad-pid=<integer>` - Terminate the yad dialog whose process id equals
 `<integer>`. You must specify this option when `yad_lib_at_restart_app` is not
-called from within a button of the terminating yad dialog.
+called from a button of the terminating yad dialog.
 
 **Return value**
 
-Silently `123` for an invalid option otherwise this function doesn't return if
-option `--exit` is given. Without `--exit` the return value is zero for success
-or a non-zero internal code for errors.
+`123` on an invalid option, otherwise return the number of parsed options.
+This function doesn't return if option `--exit` is given.
 
 ----
 
@@ -382,51 +388,60 @@ desired function code to your script file and modify it there. Make sure to
 source `yad-lib.sh` _before_ the redefined function definition.
 MARKDOWNDOC
 
-yad_lib_dispatch() # $@-script-arguments {{{1
-{
+yad_lib_dispatch () { # $1-target-function [[target-function-args] '--' script-args] {{{1
+# Return the return value of the target function. This is most useful when
+# calling `yad_lib_dispatch yad_lib_at_restart_app option... -- script-args`
+# to consume `option... --` with `shift $?`.
   case $1 in
     yad_lib_at_* ) "$@" ;;
   esac
 }
 
-yad_lib_at_restart_app() # [options] [$@-args] {{{1
-# Invoke as: sh -c "$0 yad_lib_at_restart_app ... " | yad_lib_at_restart_app ...
-{
-  local opt_exit opt_get_cmdline opt_no_capture opt_signal opt_terminate_then_restart opt_yad_pid
+yad_lib_at_restart_app () { # [options] ['--' $@-args] {{{1
+# Return 123 on invalid options otherwise return the number of
+# parsed options. No return if option --exit was given. Invocation:
+#   in a yad -=button option:
+#     sh -c "'$0' yad_lib_at_restart_app ...; shift $?"
+#   in a script
+#     yad_lib_at_restart_app ... ; shift $?
+  local opt_exit opt_get_cmdline opt_no_capture opt_signal opt_terminate_then_restart opt_yad_pid ret=$#
   while [ $# -gt 0 ]; do
     case $1 in
       --exit ) opt_exit=exit ;;
-      --exit=* ) opt_exit=${1#*=} ;;
-      --get-cmdline=* ) opt_get_cmdline=${1#*=} ;;
+      --exit=?* ) opt_exit=${1#*=} ;;
+      --get-cmdline=?* ) opt_get_cmdline=${1#*=} ;;
       --no-capture ) opt_no_capture=no_capture ;;
-      --signal=* ) opt_signal=${1#*} ;; # UNDOCUMENTED
-      --terminate-then-restart ) opt_terminate_then_restart=terminate_then_restart ;;
-      --yad-pid=* ) opt_yad_pid=${1#*=} ;; # required iff not in --button
-      --* ) return 123 ;;
-      * ) break ;;
+      --signal=?* ) opt_signal=${1#*} ;; # UNDOCUMENTED
+      --terminate-then-restart ) opt_terminate_then_restart="0.5" ;;
+      --terminate-then-restart=?* ) opt_terminate_then_restart="${1#*=}" ;;
+      --yad-pid=?* ) opt_yad_pid=${1#*=} ;; # required iff not in --button
+      -- ) shift; break ;;
+      * ) return 123 ;;
     esac
     shift
   done
   [ "$opt_no_capture" ] && opt_signal=USR2
   yad_lib_internal_restart_app ${opt_signal:-USR1} "$opt_get_cmdline" "$opt_yad_pid" "$opt_terminate_then_restart" "$@"
-  local ret=$?
+  # this exits the previous instance of the script
+  # not the one that was just restarted
   case "$opt_exit" in
     [0-9]* ) exit $opt_exit ;;
-    exit ) exit $ret ;;
+    exit ) exit ;;
   esac
-  return $ret
+  return $(( $ret > 0 ? $ret - $# : 0 ))
 }
 
-yad_lib_internal_restart_app() # $1-signal $2-script-pid $3-yad-pid $4-terminate-then-restart [$@5-args] {{{1 UNDOCUMENTED
-{
+yad_lib_internal_restart_app () { # $1-signal $2-script-pid $3-yad-pid $4-terminate-then-restart [$@5-args] {{{1 UNDOCUMENTED
+# Return 0.
   local signal="$1" script_pid="$2" yad_pid="${3:-$YAD_PID}" terminate_then_restart="$4"; shift 4
   # Export current dialog geometry.
   yad_lib_set_YAD_GEOMETRY '' '' && export YAD_GEOMETRY YAD_GEOMETRY_POPUP
 
   # Close the target dialog (also further down).
   if [ "$terminate_then_restart" ]; then
-    kill -$signal $yad_pid $YAD_PID 2>/dev/null &&
-    sleep 0.5
+    kill -$signal $yad_pid 2> /dev/null
+    wait $yad_pid 2> /dev/null
+    sleep $terminate_then_restart
   fi
 
   # Restart the dialog-displaying script, which will pick up the exported
@@ -436,23 +451,24 @@ yad_lib_internal_restart_app() # $1-signal $2-script-pid $3-yad-pid $4-terminate
   else
     "$0" "$@" &
   fi
-  local ret=$?
-  [ 0 != $ret ] && return $ret
   sleep 0.2
 
   # Close the target dialog.
   # If in --button context the caller of this function should exit.
   # If not in --button context the main script unblocks from yad.
   if ! [ "$terminate_then_restart" ]; then
-    kill -$signal $yad_pid $YAD_PID 2>/dev/null
+    kill -$signal $yad_pid 2> /dev/null
+    wait $yad_pid 2> /dev/null
   fi
+  true
 }
 
-yad_lib_at_exec_popup_yad() # [$@-args] {{{1
-# Invoke as: sh -c "$0 yad_lib_at_exec_popup_yad"
-{
+yad_lib_at_exec_popup_yad () { # [$@-args] {{{1
+# This function does not return
+# Invocation in a yad --button:
+#   sh -c "'$0' yad_lib_at_exec_popup_yad"
   yad_lib_set_YAD_GEOMETRY '' '' && export YAD_GEOMETRY YAD_GEOMETRY_POPUP
-  exec yad $YAD_GEOMETRY_POPUP "$@"
+  exec ${YAD_LIB_YAD:-yad} $YAD_GEOMETRY_POPUP "$@"
 }
 
 : << 'MARKDOWNDOC' # {{{1 yad_lib_set_YAD_GEOMETRY
@@ -649,7 +665,7 @@ manages a yad paned dialog and several popup subdialogs with the help of
 `yad_lib_set_YAD_GEOMETRY`.  This is a full -- and complex -- example.
 MARKDOWNDOC
 
-yad_lib_set_YAD_GEOMETRY() # $1-window-xid $2-window-title $3-popup-scale $4-popup-position $5-popup-message {{{1
+yad_lib_set_YAD_GEOMETRY () { # $1-window-xid $2-window-title $3-popup-scale $4-popup-position $5-popup-message {{{1
 # Compute the geometry of window $1, if any, otherwise of the parent yad
 # window.  If neither one exists, compute for window title $2, if any,
 # otherwise for window title YAD_TITLE. Assign global YAD_GEOMETRY to the
@@ -665,7 +681,6 @@ yad_lib_set_YAD_GEOMETRY() # $1-window-xid $2-window-title $3-popup-scale $4-pop
 # to snap to the named main window side, or "" to center over the main window.
 # Popup message $5 is ignored unless YAD_LIB_DEBUG includes "geometry_popup".
 # Return 0 on successful assignments, 123 on bad arguments, 1 otherwise.
-{
   local xid="${1:-$YAD_XID}" title="${2:-$YAD_TITLE}" scale="${3:-90:50:-1:-1:-1:-1}" position="${4:-center}" popup_message="$5" t a w h x y
   local title_bar_height # auto-detected; set some pixel value to override
   local geometry_popup geometry_popup_caller geometry_popup_fontsize geometry_popup_icon
@@ -824,7 +839,8 @@ function debug_popup(result,   A, argm, args, btn, c, dlg, fld, flds, geo1, geo2
 
   srand()
   prey = nbtn "=" substr(rand() + .1, 3)
-  yad  = "yad --borders=000" # "=000" to exclude non-debug yads
+  yad  = ENVIRON["YAD_LIB_YAD"]
+  yad  = (yad == "" ? "yad" : yad)" --borders=000" # "=000" to exclude non-debug yads
   klmq = "pkill -f " (q "^" yad prey spc q) # kill mine
   klaq = "pkill -f " (q "^" yad      spc q) # kill all
   dlg  = esc(icoq) nbtn
@@ -910,6 +926,8 @@ Save and execute the following code as an executable shell script.
       > /tmp/messages &
       yad_pid=$!
 
+    sleep 0.1
+
     while read message; do
       case $message in
         restart ) yad_lib_at_restart_app --exit --yad-pid=$yad_pid ;;
@@ -941,9 +959,10 @@ Save and execute the following code as an executable shell script.
     #!/bin/sh
     # initialize
     . yad-lib.sh
-    POLLING=3
+    seconds=3
 
     yad_lib_dispatch "$@"
+    shift $?
 
     # parse script arguments
 
@@ -953,8 +972,8 @@ Save and execute the following code as an executable shell script.
       --form --field=Date "$(date +"Yad $$ says it's %T")" > /tmp/output &
     yad_pid=$!
 
-    # polling at $POLLING second intervals
-    while sleep $POLLING; do
+    # polling at $seconds second intervals
+    while sleep $seconds; do
 
       if ps $yad_pid >/dev/null; then
         yad_lib_at_restart_app --yad-pid=$yad_pid
@@ -978,6 +997,64 @@ button dispatching case.
 [fatdog-wireless-antenna](https://github.com/step-/scripts-to-go/blob/master/README.md#fatdog-wireless-antenna)
 manages its window with a polling scheme.
 MARKDOWNDOC
+
+: << 'MARKDOWNDOC' # {{{1 yad_lib_require_yad
+
+### Requiring a specific yad version
+
+```sh
+    yad_lib_require_yad $1-x $2-y $3-z
+```
+
+Set global variable `YAD_VER_CAP` to the concatenation of strings
+* `x y z` - the version major, minor, and revision numbers of the yad binary.
+* `:gtk`(`2`|`3`) - the GTK+ toolkit version of the running file
+* (`:`_capability_)* - other version-dependent capability of the yad binary:
+  `text-lang`, `selectable-labels`.
+
+Set global variable `YAD_STOCK_BTN` to string `gtk` if the binary is built for
+GTK+-2 otherwise string `yad`. This can be used to set GTK+ version-independent
+button stock icons, e.g. `yad --yad-button="$YAD_STOCK_BTN-ok"`.
+
+**Positional parameters**
+
+`$1-x` required major  
+`$2-y` required minor  
+`$3-z` required revision  
+
+**Return Value**
+
+Zero if the version of yad binary is at least the required x.y.z, non-zero otherwise.
+MARKDOWNDOC
+
+yad_lib_require_yad () { # $1-x $2-y $3-z {{{1 => $YAD_VER_CAP = 'x y z'':gtk'('2'|'3')':'() / $YAD_STOCK_BTN = ('gtk'|'yad')
+  local x="${1:?}" y="${2:?}" z="${3:?}" IFS info
+  unset YAD_VER_CAP YAD_STOCK_BTN
+  info="$(${YAD_LIB_YAD:-yad} --version)"
+  [ -n "$info" ] || return 1
+
+  # yad --version sample output (one line):
+  # line 1: "0.42.43 (GTK+ 3.24.31)"
+  set -- $info
+  IFS="."; set -- $1 # version x.y.z
+  YAD_VER_CAP="$1 $2 ${3:-0}"
+
+  case "$info" in
+    *'GTK+ 2'* ) YAD_VER_CAP="$YAD_VER_CAP:gtk2" ;;
+    *'GTK+ 3'* ) YAD_VER_CAP="$YAD_VER_CAP:gtk3" ;;
+  esac
+
+  ### frequently-used :capa:bili:ties that can be tricky to assess
+  [ \( $1 -eq 0 -a $2 -eq 42 -a ${3:-0} -ge 16 \) -o \( $1 -eq 0 -a $2 -gt 42 \) -o $1 -gt 0 ] &&
+    YAD_VER_CAP="$YAD_VER_CAP:text-lang"
+  [ \( $1 -eq 0 -a $2 -eq 42 -a ${3:-0} -ge 25 \) -o \( $1 -eq 0 -a $2 -gt 42 \) -o $1 -gt 0 ] &&
+    YAD_VER_CAP="$YAD_VER_CAP:selectable-labels" # is present but broken in earlier versions
+
+  # for version 0.x it's --button=gtk-ok otherwise it's --button=yad-ok
+  [ "$1" = '0' ] && YAD_STOCK_BTN='gtk' || YAD_STOCK_BTN='yad'
+
+  [ \( $1 -eq $x -a $2 -eq $y -a ${3:-0} -ge $z \) -o \( $1 -eq $x -a $2 -gt $y \) -o $1 -gt $x ]
+}
 
 : << 'MARKDOWNDOC' # {{{1 yad_lib_set_gtk2_STYLEFILE
 
@@ -1034,8 +1111,7 @@ Save and execute the following code as an executable shell script.
 ```
 MARKDOWNDOC
 
-yad_lib_set_gtk2_STYLEFILE() # $1-style-content-keyword(compact) {{{1
-{
+yad_lib_set_gtk2_STYLEFILE () { # $1-style-content-keyword(compact) {{{1
   local a0="${0##*/}"
   local opt_pid_name
   while [ $# -gt 0 ]; do
@@ -1118,10 +1194,9 @@ non-standard location not included in your `PATH` variable.
 Zero on success, non-zero on error.
 MARKDOWNDOC
 
-yad_lib_doc() # [--strip] $1-fullpath-of-yad-lib-file {{{1
-{
+yad_lib_doc () { # [--strip] $1-fullpath-of-yad-lib-file {{{1
   local strip this
-  if [ --strip == "$1" ]; then strip=1; shift; fi
+  if [ "$1" = '--strip' ]; then strip=1; shift; fi
   this=$1
   if ! [ -s "$this" ]; then
     ls "$this" # print generic error message

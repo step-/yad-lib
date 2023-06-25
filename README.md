@@ -1,5 +1,5 @@
 title: YAD-LIB  
-date: 2020-08-24  
+date: 2023-06-25  
 homepage: <https://github.com/step-/yad-lib>  
 
 ---
@@ -41,7 +41,9 @@ other than running yad once to determine its version number.
 
 ## Documentation
 
-Markdown documentation is embedded in the
+Release documentation is [the manual](usr/share/doc/yad-lib/index.md).
+
+Up-to-date markdown documentation is embedded in the
 library source file. To extract the markdown text run the following
 command:
 
@@ -67,22 +69,25 @@ SPDX-License-Identifier: MIT OR GPL-3.0-or-later
 ## LINKS
 
 **Homepage**
-[github.com/step-/scripts-to-go](https://github.com/step-/yad-lib)
+[github.com/step-/yad-lib](https://github.com/step-/yad-lib)
 
 **Release page**
-[github.com/step-/scripts-to-go/releases](https://github.com/step-/yad-lib/releases)
+[github.com/step-/yad-lib/releases](https://github.com/step-/yad-lib/releases)
 
 **:1** yad - a GTK dialog program
-[github.com/v1cont/yad](https://github.com/v1cont/yad/)
+[github.com/step-/yad](github.com/step-/yad.md)
 
-* Fatdog64 800 binary package
-[distro.ibiblio.org/fatdog/packages/800/yad_gtk2-0.42.0_14](http://distro.ibiblio.org/fatdog/packages/800/yad_gtk2-0.42.0_5-x86_64-1.txz)
-
-* Fatdog64 800 source (the build recipe can be found under `/usr/src` in the binary package)
-[distro.ibiblio.org/fatdog/source/800/yad_gtk2-62d54eb5bf5ae2457c6986c33c6de89a6284f969.tar.gz](http://distro.ibiblio.org/fatdog/source/800/yad_gtk2-62d54eb5bf5ae2457c6986c33c6de89a6284f969.tar.gz)
+* Fatdog64 810 latest `yad_gtk2` binary package
+[distro.ibiblio.org/fatdog/packages/810/yad_gtk2-0.42.78-x86_64-1.txz](http://distro.ibiblio.org/fatdog/packages/810/yad_gtk2-0.42.78-x86_64-1.txz)
 
 * Puppy Linux forum - yad tips thread
-[http://oldforum.puppylinux.com/puppy/viewtopic.php?t=97458](http://oldforum.puppylinux.com/puppy/viewtopic.php?t=97458)
+[forum.puppylinux.com/viewtopic.php?t=3922](https://forum.puppylinux.com/viewtopic.php?t=3922)
+
+* Puppy Linux OLD forum - yad tips thread
+[oldforum.puppylinux.com/puppy/viewtopic.php?t=97458](https://oldforum.puppylinux.com/puppy/viewtopic.php?t=97458)
+
+* Yad ultimate
+[github.com/v1cont/yad](https://github.com/v1cont/yad/)
 
 **:2** Fatdog64 Linux
 [distro.ibiblio.org/fatdog/web/](http://distro.ibiblio.org/fatdog/web/)
