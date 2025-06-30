@@ -19,7 +19,7 @@ title: YAD-LIB
 version: @VERSION@  
 homepage: <https://github.com/step-/yad-lib>  
 
-# yad-lib.sh - A Shell Library for yad
+# yad-lib.sh - Enhance yad dialogs in your shell scripts.
 
 ## Do You Need This Library?
 
