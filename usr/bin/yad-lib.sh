@@ -2,26 +2,36 @@
 # vim:ft=sh:
 
 # META-begin
-# yad-lib.sh - utilities for yad.
-# Copyright (C) step, 2018-2023
+# yad-lib.sh - Enhance yad dialogs in your shell scripts.
+# Copyright (C) step, 2018-2025
 # Dual license: GNU GPL Version 3 or MIT
 # Homepage=https://github.com/step-/yad-lib
 # Requirements: see section _Compatibility and Requirements_
-# Version=1.3.0
+# Version=1.3.1
 # META-end
+
+# If you are reading this file in vim, run the following vim
+# command to extract the markdown documentation to a new buffer:
+#    :new | 0read !sh -c '(. # && yad_lib_doc #)'
 
 : << 'MARKDOWNDOC' # {{{1 Title; Do You Need This Library?
 title: YAD-LIB  
-date: @VERSION@  
+version: @VERSION@  
 homepage: <https://github.com/step-/yad-lib>  
 
 # yad-lib.sh - A Shell Library for yad
 
 ## Do You Need This Library?
 
-This shell library provides functions for restarting a yad dialog in the same
-position and with the same size that the user set before the restart was
-initiated.
+This shell library simplifies and enhances yad
+dialog management by providing functions to:
+
+  * Check yad version and capabilities to ensure compatibility.
+
+  * Restart yad dialogs in the same screen position and size as before.
+
+  * Start yad sub-dialogs over or at the four edges of the
+    current dialog, for intuitive and visually consistent popups.
 
 Section _Dispatching yad_ describes functions that allow controlling yad's
 initial dialog position and size.
@@ -85,44 +95,49 @@ MARKDOWNDOC
 
 : << 'MARKDOWNDOC' # {{{1 Initializing the Library
 
-### Initialing the Library
+### Library initialization
 
-The library may need to run the yad command. It will look up exported variable
-`YAD_LIB_YAD` for the name or pathname of a binary file, and default to `yad`.
-Your script may set this variable before sourcing the library file.
+Initialization may need to run the yad command. It will use the name or
+pathname provided by the `YAD_LIB_YAD` environment variable defaulting to
+`yad`. Your script may preset this variable before sourcing the library file.
 
-By default library initialization occurs automatically upon sourcing the
-library file.  Initialization benefits some but not all library functions.
-If your application will not call those functions it can disable automatic
-initialization by setting global variable `YAD_LIB_INIT` as follows:
+By default initialization is automatic when the library file is sourced
+and the `YAD_LIB_INIT` variable is not "-1". Your script may preset
+this variable then call the initialization function directly.
 
-```sh
-YAD_LIB_INIT="-1"; . yad-lib.sh
-```
-Then the application may initialize the library manually with:
+The `$1-yad-version` parameter must be formatted as a version string,
+e.g. `major`.`minor`.`revision` or be empty. Its value sets the exported
+`YAD_LIB_YAD_VERSION` variable. If the parameter is empty, `yad_lib_init`
+will run `$YAD_LIB_YAD` to determine the yad binary version, and export
+the `YAD_VER_CAP` and `YAD_STOCK_BTN` variable.
 
-```sh
-yad_lib_init [$1-yad-version]
-```
-
-`$1-yad-version` is a version string, `major`.`minor`.`revision`.
-If `$1-yad-version` is empty, `yad_lib_init` runs yad to extract
-the version string and set `YAD_LIB_YAD_VERSION`.
-
-`yad_lib_init` sets the following global variables:
+`yad_lib_init` returns 0 and sets the following global variables:
 
 | Name                     | Notes   | Used by                  |
 |--------------------------|---------|--------------------------|
-| YAD_LIB_SCREEN_HEIGTH    | e       | yad_lib_set_YAD_GEOMETRY |
+| YAD_LIB_SCREEN_HEIGHT    | e       | yad_lib_set_YAD_GEOMETRY |
 | YAD_LIB_SCREEN_WIDTH     | e       | yad_lib_set_YAD_GEOMETRY |
 | YAD_LIB_YAD_VERSION      | e       | yad_lib_set_YAD_GEOMETRY |
-| YAD_LIB_YAD              | e       |                          |
 | YAD_VER_CAP              | e 1     |                          |
 | YAD_STOCK_BTN            | e 1     |                          |
 
 e = exported  
-1 = only set if `$1-yad-version` is empty; see `yad_lib_require_yad`.  
+1 = if `$1-yad-version` is empty; refer to `yad_lib_require_yad`.  
 
+In summary, either let the library perform automatic initialization:
+
+```sh
+. yad-lib.sh
+```
+
+or load the library and initialize it manually:
+
+```sh
+YAD_LIB_INIT="-1" . yad-lib.sh '0.42.81'
+
+# Optionally, verify the stated minimum version
+yad_lib_require_yad '0 42 81' || die "yad is too old"
+```
 MARKDOWNDOC
 
 : << 'MARKDOWNDOC' # {{{1 Debugging
@@ -188,7 +203,7 @@ Let's recap how to terminate yad and what happens to the user data yad holds:
 2. Closing the window from the window title bar does not output the data.
 
 3. Killing yad with `SIGUSR1` makes it output the data while `SIGUSR2` does not.
-   Yad doesn't otherwise catch other signals.
+   Yad cannot catch other signals.
 
 In case #3, dispatching captures the window geometry immediately before killing
 the current yad, then it restarts the main script passing environment variables
@@ -264,8 +279,8 @@ window, such as a simple OK/Cancel prompt:
       --button="Popup:sh -c \"exec '$0' yad_lib_at_exec_popup_yad --text='Is it OK?'\""
 ```
 
-Button `Popup` doesn't terminate yad--rather, it opens a new yad instance, the
-"popup" dialog, while the current (background) yad dialog keeps running.
+Button `Popup` does not terminate yad--rather, it opens a new yad instance,
+the "popup" dialog, while the current (background) yad dialog keeps running.
 Although one could mistake the popup for a sub-window of the background dialog,
 yad does not provide sub-windows. The popup is a whole new process, and your
 script needs to handle its entire life cycle.
@@ -354,8 +369,8 @@ called from a button of the terminating yad dialog.
 
 **Return value**
 
-`123` on an invalid option, otherwise return the number of parsed options.
-This function doesn't return if option `--exit` is given.
+`123` for invalid options, the number of parsed options otherwise.
+This function does not return if option `--exit` is given.
 
 ----
 
@@ -494,7 +509,7 @@ A commonly implemented solution to this issue is to fix the dialog position and
 size, typically by placing it in the center of the screen with large-enough
 width and height. This solution is problematic on at least two accounts. First,
 setting the width and height becomes guess-work for applications that can be
-localized because the programmer doesn't know in advance how much space will
+localized because the programmer does not know in advance how much space will
 translated strings take. Second, if several instances of the same application
 need to run concurrently, their windows will cover each other in the center of
 the screen.
@@ -902,7 +917,7 @@ function esc(s) { #{{{2
 ### Blocking and Polling
 
 Dispatching with function `yad_lib_at_restart_app` also works outside the
-context of a yad button, as long as it's given the process id of a running yad
+context of a yad button, as long as it is given the process id of a running yad
 dialog.  This can be useful in a _blocking_ scenario, in which the main loop
 blocks waiting for _message output_ from yad then takes actions based on
 message content.
@@ -1006,15 +1021,15 @@ MARKDOWNDOC
     yad_lib_require_yad $1-x $2-y $3-z
 ```
 
-Set global variable `YAD_VER_CAP` to the concatenation of strings
+Set the `YAD_VER_CAP` global variable to the concatenation of strings
 * `x y z` - the version major, minor, and revision numbers of the yad binary.
 * `:gtk`(`2`|`3`) - the GTK+ toolkit version of the running file
-* (`:`_capability_)* - other version-dependent capability of the yad binary:
+* (`:`_capability_)* - other version-dependent capabilities of the yad binary:
   `text-lang`, `selectable-labels`.
 
-Set global variable `YAD_STOCK_BTN` to string `gtk` if the binary is built for
-GTK+-2 otherwise string `yad`. This can be used to set GTK+ version-independent
-button stock icons, e.g. `yad --yad-button="$YAD_STOCK_BTN-ok"`.
+If the version major is `0`, set the `YAD_STOCK_BTN` global variable to "gtk",
+otherwise to "yad". This string can be used to set yad stock buttons portably:
+e.g. `yad --yad-button="$YAD_STOCK_BTN-ok"`.
 
 **Positional parameters**
 
@@ -1024,7 +1039,7 @@ button stock icons, e.g. `yad --yad-button="$YAD_STOCK_BTN-ok"`.
 
 **Return Value**
 
-Zero if the version of yad binary is at least the required x.y.z, non-zero otherwise.
+Zero if the yad binary version is at least x.y.z, non-zero otherwise.
 MARKDOWNDOC
 
 yad_lib_require_yad () { # $1-x $2-y $3-z {{{1 => $YAD_VER_CAP = 'x y z'':gtk'('2'|'3')':'() / $YAD_STOCK_BTN = ('gtk'|'yad')
@@ -1050,7 +1065,8 @@ yad_lib_require_yad () { # $1-x $2-y $3-z {{{1 => $YAD_VER_CAP = 'x y z'':gtk'('
   [ \( $1 -eq 0 -a $2 -eq 42 -a ${3:-0} -ge 25 \) -o \( $1 -eq 0 -a $2 -gt 42 \) -o $1 -gt 0 ] &&
     YAD_VER_CAP="$YAD_VER_CAP:selectable-labels" # is present but broken in earlier versions
 
-  # for version 0.x it's --button=gtk-ok otherwise it's --button=yad-ok
+  # Yad versions 0.y.z understand `--button=gtk-ok`. Other versions require
+  # `--button=yad-ok`, and provide fewer stock button choices (CAVEAT).
   [ "$1" = '0' ] && YAD_STOCK_BTN='gtk' || YAD_STOCK_BTN='yad'
 
   [ \( $1 -eq $x -a $2 -eq $y -a ${3:-0} -ge $z \) -o \( $1 -eq $x -a $2 -gt $y \) -o $1 -gt $x ]
@@ -1082,7 +1098,7 @@ also option `--pid-name` below.
 
 `--pid-name` - Append the calling PID to the temporary file name, and create a
 new file.  Without this option, the file name is fixed - given the calling
-script - and it doesn't overwrite an existing file by the same name. This
+script - and it does not overwrite an existing file by the same name. This
 allows for editing the file outside this library.
 
 **Return Value**
@@ -1181,7 +1197,7 @@ Documentation_.
 
 **Options**
 
-`--strip` - Output non-documentation lines, that is, just the source code.
+`--strip` - Output non-documentation lines, that is, "Give me just the source code".
 
 **Positional parameters**
 
