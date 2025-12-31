@@ -1,85 +1,92 @@
-title: YAD-LIB  
-version: 1.3.1  
-homepage: <https://github.com/step-/yad-lib>  
+---
+title: YAD-LIB 1.4.0  
+section: 1  
+date: 2025-12-31  
+version: 1.4.0
+author: <https://github.com/step-/yad-lib>  
+---
 
-# yad-lib.sh - Enhance yad dialogs in your shell scripts.
-
-## Do You Need This Library?
+# DESCRIPTION
 
 This shell library simplifies and enhances yad
 dialog management by providing functions to:
 
-  * Check yad version and capabilities to ensure compatibility.
+  * Check yad version and capabilities
+  * Restart a yad dialog keeping the same size and position
+  * Start a subdialog centered in or at the four edges of the current dialog
+  * Support HiDPI screens (GTK-3 and up)
 
-  * Restart yad dialogs in the same screen position and size as before.
+Section _Library Initialization_ documents library initialization options.
 
-  * Start yad sub-dialogs over or at the four edges of the
-    current dialog, for intuitive and visually consistent popups.
-
-Section _Dispatching yad_ describes functions that allow controlling yad's
+Section _Dispatching Yad_ describes functions allowing control of yad's
 initial dialog position and size.
 
-Section _Keeping yad Window Position and Size_, describes functions that
-calculate the X11 geometry of the main dialog and of an optional popup dialog.
+Section _Keeping Yad Window Position and Size_, describes functions that
+calculate size and position of the main dialog and of an optional popup dialog.
 
-The remaining sections describe various functions for advanced yad usage.
+The remaining sections describe functions for advanced yad usage.
 
-When do you need this library?  If your script restarts yad several times,
-possibly stacking two yad dialogs, and you want to improve the user experience.
+This library is included in [Fatdog64 Linux](http://distro.ibiblio.org/fatdog/web/).
+Fatdog64 provides the following yad packages:
+ * `yad_gtk2` (GTK-2 binary), `yad_gtk2_doc` (documentation), `yad_gtk3` (GTK-3 binary)
+ * `yad_ultimate` (GTK-3 binary and documentation)
 
-This library is included in [Fatdog64
-Linux](http://distro.ibiblio.org/fatdog/web/).  Fatdog64 provides three yad
-packages: `yad_gtk2` (default) and `yad_gtk3` - both built from the [GTK2
-maintenance branch](https://github.com/step-/yad/tree/maintain-gtk2);
-`yad_ultimate` built from the [upstream yad
-repo](https://github.com/v1cont/yad).
+The first three packages derive from the [GTK2 maintenance](https://github.com/step-/yad/tree/maintain-gtk2) repository. `Yad_gtk2` is the default binary in Fatdog64 Linux.
 
-## Usage and Documentation
+The "ultimate" package derives from the [upstream yad](https://github.com/v1cont/yad) repository.
 
-Source code and documentation are hosted on
-[github](https://github.com/step-/yad-lib). For support open a new
-[issue](https://github.com/step-/yad-lib/issues).  Contributions in the form of
-[pull request](https://github.com/step-/yad-lib/pulls) are welcome.
+Note the two repositories differ on some features.
+Refer to <https://github.com/step-/yad/blob/maintain-gtk2/feature-comparison.md>.
 
-To use the library source its file from your shell script.
+# SYNOPSIS
 
 ```sh
-    . yad-lib.sh
-```
-
-assuming that the file is installed in one of the standard locations in your
-`PATH`, otherwise specify the full installation path.
-
-The library source file embeds its own documentation formatted as a
-markdown document. The following command sequence extracts the markdown text
-and displays it with the
-[mdview](http://chiselapp.com/user/jamesbond/repository/mdview3/timeline)
-viewer, which comes pre-installed in
-[Fatdog64 Linux](http://distro.ibiblio.org/fatdog/web/):
-
-```sh
-( . yad-lib.sh && yad_lib_doc > /tmp/yad-lib.md && mdview /tmp/yad-lib.md ) &
-```
-
-Conversely, to strip off markdown text and produce a smaller library file:
-
-```sh
-( . yad-lib.sh && yad_lib_doc > /tmp/yad-lib.md && mdview /tmp/yad-lib.md ) &
+    [ENVIRONMENT] . yad-lib.sh               # if installed in your $PATH
+    [ENVIRONMENT] . /path/to/yad-lib.sh      # otherwise
 ```
 
 ## Compatibility and Requirements
 
-This library is compatible with `sh`, `bash`, `dash`, and `ash` (busybox).
+The library is compatible with `sh`, `bash`, `dash`, and busybox `ash`.
 It is tested with `yad_gtk2` and `yad_gtk3`.
-It requires `xwininfo`, `awk`, and the proc file system.
+It requires `xwininfo`, `awk`, and the `proc` file system.
 
-## Functions
+# DOCUMENTATION
 
-### Library initialization
+Yad-lib source code and documentation are hosted on [github](https://github.com/step-/yad-lib).
+For support questions please open a new [issue](https://github.com/step-/yad-lib/issues).
+[Pull requests](https://github.com/step-/yad-lib/pulls) are welcome.
 
-Initialization may need to run the yad command. It will use the name or
-pathname provided by the `YAD_LIB_YAD` environment variable defaulting to
-`yad`. Your script may preset this variable before sourcing the library file.
+The library source file embeds its own documentation formatted as Markdown.
+The following command extracts the markdown text and displays it with the
+[mdview](https://github.com/step-/mdview) viewer installed in Fatdog64 Linux.
+
+```sh
+( . yad-lib.sh && yad_lib_doc > /tmp/yad-lib.md && mdview /tmp/yad-lib.md ) &
+```
+
+If pandoc is installed, you can convert the Markdown document to a man page as follows:
+
+```sh
+pandoc -s -fmarkdown -tman /tmp/yad-lib.md > /tmp/yad-lib.1
+```
+
+To strip off markdown text obtaining a smaller library file:
+
+```sh
+(. yad-lib.sh && yad_lib_doc --strip > /tmp/yad-lib.sh)
+```
+
+# FUNCTIONS
+
+## Library Initialization
+
+Source the file from your script. This sets the global variable `YAD_LIB_VERSION`.
+
+When initialization and other library functions need to run the yad binary,
+they take the command name from the `YAD_LIB_YAD` environment variable if set,
+otherwise from the `YAD_BIN` environment variable if set, falling back to `yad`.
+Your script may preset these variables before sourcing the library file.
 
 By default initialization is automatic when the library file is sourced
 and the `YAD_LIB_INIT` variable is not "-1". Your script may preset
@@ -88,21 +95,22 @@ this variable then call the initialization function directly.
 The `$1-yad-version` parameter must be formatted as a version string,
 e.g. `major`.`minor`.`revision` or be empty. Its value sets the exported
 `YAD_LIB_YAD_VERSION` variable. If the parameter is empty, `yad_lib_init`
-will run `$YAD_LIB_YAD` to determine the yad binary version, and export
-the `YAD_VER_CAP` and `YAD_STOCK_BTN` variable.
+will run yad and set and export the `YAD_LIB_YAD_VERSION`, `YAD_VER_CAP`
+and `YAD_STOCK_BTN` variables.
 
 `yad_lib_init` returns 0 and sets the following global variables:
 
-| Name                     | Notes   | Used by                  |
-|--------------------------|---------|--------------------------|
-| YAD_LIB_SCREEN_HEIGHT    | e       | yad_lib_set_YAD_GEOMETRY |
-| YAD_LIB_SCREEN_WIDTH     | e       | yad_lib_set_YAD_GEOMETRY |
-| YAD_LIB_YAD_VERSION      | e       | yad_lib_set_YAD_GEOMETRY |
-| YAD_VER_CAP              | e 1     |                          |
-| YAD_STOCK_BTN            | e 1     |                          |
+| Name                    | Notes | Used by                    |
+|-------------------------|-------|----------------------------|
+| `YAD_LIB_SCREEN_HEIGHT` | e     | `yad_lib_set_YAD_GEOMETRY` |
+| `YAD_LIB_SCREEN_WIDTH`  | e     | `yad_lib_set_YAD_GEOMETRY` |
+| `YAD_LIB_YAD_VERSION`   | e     | `yad_lib_set_YAD_GEOMETRY` |
+| `YAD_VER_CAP`           | e¹    | `yad_lib_set_YAD_GEOMETRY` |
+| `YAD_STOCK_BTN`         | e¹    |                            |
 
 e = exported  
-1 = if `$1-yad-version` is empty; refer to `yad_lib_require_yad`.  
+¹ = exported if `$1-yad-version` is empty otherwise call
+`yad_lib_require_yad` and export the variable manually if necessary.  
 
 In summary, either let the library perform automatic initialization:
 
@@ -113,13 +121,14 @@ In summary, either let the library perform automatic initialization:
 or load the library and initialize it manually:
 
 ```sh
-YAD_LIB_INIT="-1" . yad-lib.sh '0.42.81'
+YAD_LIB_INIT=-1
+. yad-lib.sh '0.42.81' # exports YAD_LIB_YAD_VERSION=0.42.81
 
-# Optionally, verify the stated minimum version
+# Optionally, verify that $YAD_LIB_VERSION is at least 0.42.81
 yad_lib_require_yad '0 42 81' || die "yad is too old"
 ```
 
-### Debugging
+## Debugging
 
 You can enable library debugging tools.  Set environment variable
 `YAD_LIB_DEBUG` and run your application.  `YAD_LIB_DEBUG` is a colon-separated
@@ -142,7 +151,7 @@ The following keywords are supported:
 [yad\_lib\_set\_YAD\_GEOMETRY](#yad_lib_set_YAD_GEOMETRY_debug).
 
 
-### Dispatching yad
+## Dispatching Yad
 
 In this document the term "dispatching" means restarting the main script in a
 way that sets the geometry of the next yad window as it was set by the user
@@ -247,7 +256,7 @@ instead of from a yad button.  Section _Polling and Messaging_ will show
 how.  Before then let's look at the full syntax of the dispatching functions,
 and learn how to preserve yad position and size.
 
-### Full syntax of the dispatcher function
+### Full Syntax of Dispatcher Function
 
 ```sh
     yad_lib_dispatch [$@-arguments]
@@ -271,7 +280,7 @@ when the dispatch target is `yad_lib_at_restart_app` and `yad_lib_dispatch`
 is passed target's options and script arguments. Then add `shift $?` after
 `yad_lib_dispatch` to consume the target's options.
 
-### Full syntax of the dispatch target functions
+### Full Syntax of Dispatch Target Functions
 
 
 ```sh
@@ -359,7 +368,7 @@ source `yad-lib.sh` _before_ the redefined function definition.
 
 <a name="yad_lib_set_YAD_GEOMETRY"></a>
 
-### Keeping yad Window Position and Size
+## Keeping Yad Window Position and Size
 
 Unlike `gtkdialog`, `yad` has no notion of its window position; it relies
 entirely on the window manager to set where the next yad instance window should
@@ -548,7 +557,7 @@ Save and execute the following code as an executable shell script.
 manages a yad paned dialog and several popup subdialogs with the help of
 `yad_lib_set_YAD_GEOMETRY`.  This is a full -- and complex -- example.
 
-### Blocking and Polling
+## Blocking and Polling
 
 Dispatching with function `yad_lib_at_restart_app` also works outside the
 context of a yad button, as long as it is given the process id of a running yad
@@ -646,7 +655,7 @@ button dispatching case.
 [fatdog-wireless-antenna](https://github.com/step-/scripts-to-go/blob/master/README.md#fatdog-wireless-antenna)
 manages its window with a polling scheme.
 
-### Requiring a specific yad version
+## Requiring a Specific Yad Version
 
 ```sh
     yad_lib_require_yad $1-x $2-y $3-z
@@ -672,7 +681,7 @@ e.g. `yad --yad-button="$YAD_STOCK_BTN-ok"`.
 
 Zero if the yad binary version is at least x.y.z, non-zero otherwise.
 
-### Theming yad With a GTK2 Style File
+## Theming Yad With a GTK2 Style File
 
 ```sh
     [SN=<script name>] yad_lib_set_gtk2_STYLEFILE [options] $1-style-content-keyword
@@ -724,7 +733,7 @@ Save and execute the following code as an executable shell script.
     yad --title="Without style file" &
 ```
 
-### Sundry
+## Sundry
 
     yad_lib_doc [--strip] [$1-full-path-of-yad-lib-file]
 
@@ -733,7 +742,7 @@ Documentation_.
 
 **Options**
 
-`--strip` - Output non-documentation lines, that is, "Give me just the source code".
+`--strip` - Output non-documentation lines, that is, "Just give me the source code".
 
 **Positional parameters**
 
