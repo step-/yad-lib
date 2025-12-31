@@ -1240,11 +1240,12 @@ yad_lib_doc () { # [--strip] $1-fullpath-of-yad-lib-file {{{1
     echo "Trying standard path..." >&2
     this=$(command -v yad-lib.sh | tee /dev/stderr)
   fi
-  awk -v STRIP=$strip '#{{{awk
+  awk -v STRIP=$strip -v DATE=$(date +%Y-%m-%d) '#{{{awk
   BEGIN { STRIP = STRIP + 0 }
   /^# Version=/ { Version = substr($0, 11) }
   /[M]ARKDOWNDOC/ { md = index($0, "<<"); next }
    md  && /@VERSION@/ { gsub(/@VERSION@/, Version) }
+   md  && /@DATE@/    { gsub(/@DATE@/, DATE) }
    md  && !STRIP { print; next } # doc
   !md  &&  STRIP { print; next } # code
   #awk}}}' "$this"
