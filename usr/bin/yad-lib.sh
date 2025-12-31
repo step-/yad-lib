@@ -699,10 +699,15 @@ yad_lib_set_YAD_GEOMETRY () { # $1-window-xid $2-window-title $3-popup-scale $4-
 # Popup-position $4 is one of "top", "right", "bottom", "left" (can abbreviate)
 # to snap to the named main window side, or "" to center over the main window.
 # Popup message $5 is ignored unless YAD_LIB_DEBUG includes "geometry_popup".
+# Since `YAD_LIB_VERSION` 1.4.0, for GTK-3 and up, the value of the `GDK_SCALE`
+# environment variable is further applied to the heights and widths of the
+# `YAD_GEOMETRY` and `YAD_GEOMETRY_POPUP` output variables to provide automatic
+# HiDPI screen support.
 # Return 0 on successful assignments, 123 on bad arguments, 1 otherwise.
   local xid="${1:-$YAD_XID}" title="${2:-$YAD_TITLE}" scale="${3:-90:50:-1:-1:-1:-1}" position="${4:-center}" popup_message="$5" t a w h x y
   local title_bar_height # auto-detected; set some pixel value to override
   local geometry_popup geometry_popup_caller geometry_popup_fontsize geometry_popup_icon
+  local gdk_scale
   if [ "$xid" ]; then
     t=-id a=$xid
   elif [ "$title" ]; then
@@ -729,6 +734,8 @@ yad_lib_set_YAD_GEOMETRY () { # $1-window-xid $2-window-title $3-popup-scale $4-
   esac
   #}}}
 
+  [ "${YAD_VER_CAP#*gtk2}" = "$YAD_VER_CAP" ] && gdk_scale=${GDK_SCALE:-1} || gdk_scale=1
+
   # convert scale separators comma and slash to colon
   local sep=":" ; case $scale in */* ) sep=/ ;; *,* ) sep=, ;; esac
   local IFS="$sep"
@@ -742,6 +749,7 @@ yad_lib_set_YAD_GEOMETRY () { # $1-window-xid $2-window-title $3-popup-scale $4-
     -v HS=${YAD_LIB_SCREEN_HEIGHT:-0} \
     -v VERSION="${YAD_LIB_YAD_VERSION:-0}" \
     -v POSITION="$position" \
+    -v GDK_SCALE=$gdk_scale \
     \
     -v DEBUG_POPUP="$geometry_popup" \
     -v DEBUG_POPUP_CALLER="$geometry_popup_caller" \
@@ -764,6 +772,14 @@ END {
   if ("" != TITLE_BAR_HEIGHT) { ht = TITLE_BAR_HEIGHT + 0 }
   x -= wt; y -= ht
   if(x < 1) { x = 0 }; if(y < 1) { y = 0 }
+
+  if (GDK_SCALE > 1) {
+    x  = int (x  / GDK_SCALE)
+    y  = int (y  / GDK_SCALE)
+    w  = int (w  / GDK_SCALE)
+    h  = int (h  / GDK_SCALE)
+  }
+
   for(i = split(P, Scale); i > 0; i--) {
     Scale[i] = ("" == Scale[i]) ? -1 : (Scale[i] + 0)
   }
