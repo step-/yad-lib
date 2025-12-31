@@ -7,9 +7,9 @@
 # Dual license: GNU GPL Version 3 or MIT
 # Homepage=https://github.com/step-/yad-lib
 # Requirements: see section _Compatibility and Requirements_
-# Version=1.3.1
+# Version=1.4.0
 # META-end
-YAD_LIB_VERSION=1.3.1
+YAD_LIB_VERSION=1.4.0
 
 # If you are reading this file in vim, run the following vim
 # command to extract the markdown documentation to a new buffer:
