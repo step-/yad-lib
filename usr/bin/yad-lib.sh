@@ -16,9 +16,13 @@ YAD_LIB_VERSION=1.3.1
 #    :new | 0read !sh -c '(. # && yad_lib_doc #)'
 
 : << 'MARKDOWNDOC' # {{{1 Title; Do You Need This Library?
-title: YAD-LIB  
-version: @VERSION@  
-homepage: <https://github.com/step-/yad-lib>  
+---
+title: YAD-LIB @VERSION@  
+section: 1  
+date: @DATE@  
+version: @VERSION@
+author: <https://github.com/step-/yad-lib>  
+---
 
 # yad-lib.sh - Enhance yad dialogs in your shell scripts.
 
