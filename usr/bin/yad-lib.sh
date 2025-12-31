@@ -97,9 +97,10 @@ MARKDOWNDOC
 
 ### Library initialization
 
-Initialization may need to run the yad command. It will use the name or
-pathname provided by the `YAD_LIB_YAD` environment variable defaulting to
-`yad`. Your script may preset this variable before sourcing the library file.
+When initialization and other library functions need to run the yad binary,
+they take the command name from the `YAD_LIB_YAD` environment variable if set,
+otherwise from the `YAD_BIN` environment variable if set, falling back to `yad`.
+Your script may preset these variables before sourcing the library file.
 
 By default initialization is automatic when the library file is sourced
 and the `YAD_LIB_INIT` variable is not "-1". Your script may preset
@@ -108,8 +109,8 @@ this variable then call the initialization function directly.
 The `$1-yad-version` parameter must be formatted as a version string,
 e.g. `major`.`minor`.`revision` or be empty. Its value sets the exported
 `YAD_LIB_YAD_VERSION` variable. If the parameter is empty, `yad_lib_init`
-will run `$YAD_LIB_YAD` to determine the yad binary version, and export
-the `YAD_VER_CAP` and `YAD_STOCK_BTN` variable.
+will run yad to determine the yad binary version, and export
+the `YAD_VER_CAP` and `YAD_STOCK_BTN` variables.
 
 `yad_lib_init` returns 0 and sets the following global variables:
 
@@ -483,7 +484,7 @@ yad_lib_at_exec_popup_yad () { # [$@-args] {{{1
 # Invocation in a yad --button:
 #   sh -c "'$0' yad_lib_at_exec_popup_yad"
   yad_lib_set_YAD_GEOMETRY '' '' && export YAD_GEOMETRY YAD_GEOMETRY_POPUP
-  exec ${YAD_LIB_YAD:-yad} $YAD_GEOMETRY_POPUP "$@"
+  exec ${YAD_LIB_YAD:-${YAD_BIN:-yad}} $YAD_GEOMETRY_POPUP "$@"
 }
 
 : << 'MARKDOWNDOC' # {{{1 yad_lib_set_YAD_GEOMETRY
@@ -855,6 +856,7 @@ function debug_popup(result,   A, argm, args, btn, c, dlg, fld, flds, geo1, geo2
   srand()
   prey = nbtn "=" substr(rand() + .1, 3)
   yad  = ENVIRON["YAD_LIB_YAD"]
+  if (yad == "") yad = ENVIRON["YAD_BIN"]
   yad  = (yad == "" ? "yad" : yad)" --borders=000" # "=000" to exclude non-debug yads
   klmq = "pkill -f " (q "^" yad prey spc q) # kill mine
   klaq = "pkill -f " (q "^" yad      spc q) # kill all
@@ -1045,7 +1047,7 @@ MARKDOWNDOC
 yad_lib_require_yad () { # $1-x $2-y $3-z {{{1 => $YAD_VER_CAP = 'x y z'':gtk'('2'|'3')':'() / $YAD_STOCK_BTN = ('gtk'|'yad')
   local x="${1:?}" y="${2:?}" z="${3:?}" IFS info
   unset YAD_VER_CAP YAD_STOCK_BTN
-  info="$(${YAD_LIB_YAD:-yad} --version)"
+  info="$(${YAD_LIB_YAD:-${YAD_BIN:-yad}} --version)"
   [ -n "$info" ] || return 1
 
   # yad --version sample output (one line):
