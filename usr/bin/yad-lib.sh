@@ -9,6 +9,7 @@
 # Requirements: see section _Compatibility and Requirements_
 # Version=1.3.1
 # META-end
+YAD_LIB_VERSION=1.3.1
 
 # If you are reading this file in vim, run the following vim
 # command to extract the markdown documentation to a new buffer:
@@ -96,6 +97,8 @@ MARKDOWNDOC
 : << 'MARKDOWNDOC' # {{{1 Initializing the Library
 
 ### Library initialization
+
+Source the file from your script. This sets the global variable `YAD_LIB_VERSION`.
 
 When initialization and other library functions need to run the yad binary,
 they take the command name from the `YAD_LIB_YAD` environment variable if set,
