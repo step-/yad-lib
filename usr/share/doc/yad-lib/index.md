@@ -1,7 +1,7 @@
 ---
 title: YAD-LIB 1.4.0  
 section: 1  
-date: 2025-12-31  
+date: 2026-01-01  
 version: 1.4.0
 author: <https://github.com/step-/yad-lib>  
 ---
@@ -124,7 +124,7 @@ or load the library and initialize it manually:
 YAD_LIB_INIT=-1
 . yad-lib.sh '0.42.81' # exports YAD_LIB_YAD_VERSION=0.42.81
 
-# Optionally, verify that $YAD_LIB_VERSION is at least 0.42.81
+# Optionally, verify that $YAD_LIB_YAD_VERSION is at least 0.42.81
 yad_lib_require_yad '0 42 81' || die "yad is too old"
 ```
 
@@ -662,6 +662,7 @@ manages its window with a polling scheme.
 ```
 
 Set the `YAD_VER_CAP` global variable to the concatenation of strings
+
 * `x y z` - the version major, minor, and revision numbers of the yad binary.
 * `:gtk`(`2`|`3`) - the GTK+ toolkit version of the running file
 * (`:`_capability_)* - other version-dependent capabilities of the yad binary:

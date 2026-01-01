@@ -3,7 +3,7 @@
 
 # META-begin
 # yad-lib.sh - YAD dialog scripting helpers
-# Copyright (C) step, 2018-2025
+# Copyright (C) step, 2018-2026
 # Dual license: GNU GPL Version 3 or MIT
 # Homepage=https://github.com/step-/yad-lib
 # Requirements: see section _Compatibility and Requirements_
@@ -1049,6 +1049,7 @@ MARKDOWNDOC
 ```
 
 Set the `YAD_VER_CAP` global variable to the concatenation of strings
+
 * `x y z` - the version major, minor, and revision numbers of the yad binary.
 * `:gtk`(`2`|`3`) - the GTK+ toolkit version of the running file
 * (`:`_capability_)* - other version-dependent capabilities of the yad binary:
