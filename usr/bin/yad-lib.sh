@@ -165,7 +165,7 @@ The following keywords are supported:
 > `geometry_popup`
 [yad\_lib\_set\_YAD\_GEOMETRY](#yad_lib_set_YAD_GEOMETRY_debug).
 
-> `geometry_popup_caller`
+> `geometry_popup_bash_caller`
 [yad\_lib\_set\_YAD\_GEOMETRY](#yad_lib_set_YAD_GEOMETRY_debug).
 
 > `geometry_popup_fontsize`
@@ -635,7 +635,7 @@ Display an information window sized and positioned according to
 If your application calls `yad_lib_set_gtk2_STYLEFILE` the styles will be
 applied to this window. If `$5-popup-message` is set it will be shown.
 
-> `geometry_popup_caller=<n>`  
+> `geometry_popup_bash_caller=<n>`  
 Include <n> levels of bash call-stack frame information (default none).
 Non-negative integer `<n>` is passed to the bash `caller` built-in command.
 
@@ -647,7 +647,7 @@ or larger (see the Pango documentation).
 Set yad `--window-icon` option (fall back to `YAD_OPTIONS` or yad's icon).
 
 ```sh
-YAD_LIB_DEBUG="geometry_popup:geometry_popup_caller=2:geometry_popup_fontsize=xx-small:geometry_popup_icon=gtk-dialog-info" your_app
+YAD_LIB_DEBUG="geometry_popup:geometry_popup_bash_caller=2:geometry_popup_fontsize=xx-small:geometry_popup_icon=gtk-dialog-info" your_app
 ```
 
 **Example**
@@ -712,7 +712,7 @@ yad_lib_set_YAD_GEOMETRY () { # $1-window-xid $2-window-title $3-popup-scale $4-
 # Return 0 on successful assignments, 123 on bad arguments, 1 otherwise.
   local xid="${1:-$YAD_XID}" title="${2:-$YAD_TITLE}" scale="${3:-90:50:-1:-1:-1:-1}" position="${4:-center}" popup_message="$5" t a w h x y
   local title_bar_height # auto-detected; set some pixel value to override
-  local geometry_popup geometry_popup_caller geometry_popup_fontsize geometry_popup_icon
+  local geometry_popup geometry_popup_bash_caller geometry_popup_fontsize geometry_popup_icon
   local gdk_scale
   if [ "$xid" ]; then
     t=-id a=$xid
@@ -723,10 +723,10 @@ yad_lib_set_YAD_GEOMETRY () { # $1-window-xid $2-window-title $3-popup-scale $4-
   fi
   case :$YAD_LIB_DEBUG: in *:geometry_popup:* ) # {{{
     geometry_popup=1
-    case :$YAD_LIB_DEBUG: in *:geometry_popup_caller=* )
+    case :$YAD_LIB_DEBUG: in *:geometry_popup_bash_caller=* )
       if [ "$BASH" ]; then
-        local depth="${YAD_LIB_DEBUG#*geometry_popup_caller=}"; depth=${depth%%:*}
-        geometry_popup_caller="$(while caller $i && ((i++ <= $depth)); do :; done)"
+        local depth="${YAD_LIB_DEBUG#*geometry_popup_bash_caller=}"; depth=${depth%%:*}
+        geometry_popup_bash_caller="$(while caller $i && ((i++ <= $depth)); do :; done)"
       fi
     esac
     case :$YAD_LIB_DEBUG: in *:geometry_popup_fontsize=* )
@@ -758,7 +758,7 @@ yad_lib_set_YAD_GEOMETRY () { # $1-window-xid $2-window-title $3-popup-scale $4-
     -v GDK_SCALE=$gdk_scale \
     \
     -v DEBUG_POPUP="$geometry_popup" \
-    -v DEBUG_POPUP_CALLER="$geometry_popup_caller" \
+    -v DEBUG_POPUP_BASH_CALLER="$geometry_popup_bash_caller" \
     -v DEBUG_POPUP_FONTSIZE="${geometry_popup_fontsize:-x-small}" \
     -v DEBUG_POPUP_ICON="$geometry_popup_icon" \
     -v DEBUG_POPUP_MESSAGE="$popup_message" \
@@ -891,14 +891,14 @@ function debug_popup(result,   A, argm, args, btn, c, dlg, fld, flds, geo1, geo2
 
   # without getcurpos: {{{
   # mou  = "  --mouse"
-  # A["="] = (q (yad prey (mou esc(tl2q) icop nbtn text (eq DEBUG_POPUP_CALLER eq))) q)
+  # A["="] = (q (yad prey (mou esc(tl2q) icop nbtn text (eq DEBUG_POPUP_BASH_CALLER eq))) q)
   # A["#"] = (q (yad prey (mou esc(tl2q) icop nbtn text (eq dlg geo1 "\\r" dlg geo2 eq))) q)
   # A["i"] = (q (yad prey (mou esc(tl2q) icop nbtn text (eq res1 "\\r" args argm "\\r" res2 eq))) q)
   # }}}
 
   # with getcurpos:
   mou  = esc(" $(set -- $(getcurpos); [ $1 ] && echo --posx=$1 --posy=$(($2 +20)) || echo --mouse)")
-  A["="] = (q "sh -c "esc(q noio " " yad prey (mou esc(tl2q) icop nbtn text (eq DEBUG_POPUP_CALLER eq)) q) q)
+  A["="] = (q "sh -c "esc(q noio " " yad prey (mou esc(tl2q) icop nbtn text (eq DEBUG_POPUP_BASH_CALLER eq)) q) q)
   A["#"] = (q "sh -c "esc(q noio " " yad prey (mou esc(tl2q) icop nbtn text (eq dlg geo1 "\\r" dlg geo2 eq)) q) q)
   A["i"] = (q "sh -c "esc(q noio " " yad prey (mou esc(tl2q) icop nbtn text (eq res1 "\\r" args argm "\\r" res2 eq)) q) q)
 
@@ -909,7 +909,7 @@ function debug_popup(result,   A, argm, args, btn, c, dlg, fld, flds, geo1, geo2
   ### Debug dialog proper
 
   c = noio ";" yad tl1q icoq nbtn geo2 styq text (q (speq args sp0) q)
-  if(DEBUG_POPUP_CALLER) { # bash only
+  if(DEBUG_POPUP_BASH_CALLER) { # bash only
   c = c fld (q "_=!!call stack:FBTN" q)       spc A["="]; ++flds
   }
   c = c fld (q "_#!!commands:FBTN" q)         spc A["#"]; ++flds
